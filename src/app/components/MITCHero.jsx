@@ -1,7 +1,4 @@
-// File: trademilaan/src/components/MITCHero.jsx
-import React from 'react';
-
-const MITCHero = () => {
+export default function MITCHero() {
   return (
     <section className="relative w-full h-[50vh] md:h-[60vh] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -23,6 +20,4 @@ const MITCHero = () => {
       </div>
     </section>
   );
-};
-
-export default MITCHero;
+}

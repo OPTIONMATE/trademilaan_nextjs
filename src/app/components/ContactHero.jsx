@@ -1,7 +1,4 @@
-// File: trademilaan/src/components/ContactHero.jsx
-import React from 'react';
-
-const ContactHero = () => {
+export default function ContactHero() {
   return (
     <section className="relative w-full h-[50vh] md:h-[60vh] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -23,6 +20,4 @@ const ContactHero = () => {
       </div>
     </section>
   );
-};
-
-export default ContactHero;
+}

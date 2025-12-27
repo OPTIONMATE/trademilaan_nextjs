@@ -1,6 +1,6 @@
-"use client";;
-import React, { useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+"use client";
+import { useMemo, useRef, useState } from "react";
+import { cn } from "@/app/lib/utils";
 
 export const BackgroundRippleEffect = ({
   rows = 8,

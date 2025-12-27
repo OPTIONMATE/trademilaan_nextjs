@@ -1,7 +1,6 @@
 "use client";
-import React from "react";
-import { Link } from "react-router-dom";
-import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect";
+import Link from "next/link";
+import { BackgroundRippleEffect } from "@/app/components/ui/background-ripple-effect";
 import { motion } from "framer-motion";
 
 const heading = "Empowering Traders With AI-Powered Market Insights";
@@ -85,7 +84,7 @@ export function BackgroundRipple() {
             Explore Now
           </motion.button>
 
-          <Link to="/contact">
+          <Link href="/contact">
             <motion.button
               whileHover={{ y: -4, scale: 1.04 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}

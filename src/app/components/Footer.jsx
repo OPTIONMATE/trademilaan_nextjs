@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+"use client";
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const Footer = () => {
@@ -65,7 +65,7 @@ const Footer = () => {
               {quickLinks.map((link, index) => (
                 <li key={index}>
                   <Link
-                    to={link.path}
+                    href={link.path}
                     className="text-neutral-300 hover:text-lime-400 transition-colors duration-300 text-sm flex items-center group"
                   >
                     <span className="mr-2 text-lime-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">→</span>

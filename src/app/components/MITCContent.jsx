@@ -1,7 +1,4 @@
-// File: trademilaan/src/components/MITCContent.jsx
-import React from "react";
-
-const MITCContent = () => {
+export default function MITCContent() {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_20px_40px_rgba(0,0,0,0.08)] p-8 md:p-12">
@@ -200,6 +197,4 @@ const MITCContent = () => {
       </div>
     </div>
   );
-};
-
-export default MITCContent;
+}

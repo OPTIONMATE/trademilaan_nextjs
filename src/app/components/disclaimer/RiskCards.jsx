@@ -1,6 +1,3 @@
-// File: RiskCards.jsx
-import React from "react";
-
 const risks = [
   {
     title: "MARKET RISKS WARNING",

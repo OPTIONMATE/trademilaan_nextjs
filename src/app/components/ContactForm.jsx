@@ -1,5 +1,5 @@
-// File: trademilaan/src/components/ContactForm.jsx
-import React, { useState } from 'react';
+"use client";
+import { useState } from 'react';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({

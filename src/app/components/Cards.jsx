@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
+"use client";
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 const services = [
@@ -141,7 +141,7 @@ export default function Cards() {
 
               <div>
                 <Link
-                  to="/services"
+                  href="/contact"
                   className="mt-2 flex w-fit items-center justify-center gap-3 self-start rounded-full bg-white/15 px-5 py-3 text-sm font-semibold leading-none backdrop-blur transition-all duration-300 hover:bg-white hover:text-black group"
                 >
                   Learn More

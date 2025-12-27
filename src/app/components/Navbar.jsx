@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { Menu, MenuItem } from "./ui/navbar-menu";
-import { cn } from "@/lib/utils";
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { Menu, MenuItem } from "./ui/Navbar-menu";
+import { cn } from "@/app/lib/utils";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -16,21 +17,21 @@ export function Navbar() {
       >
         {/* Logo */}
         <div className="shrink-0">
-          <NavLink to="/" className={"flex items-center gap-1"} onClick={closeMobile}>
+          <Link href="/" className="flex items-center gap-1" onClick={closeMobile}>
             <img src="/trademilaan.png" alt="Trademilaan Logo" className="h-6 w-6 md:h-8 md:w-8" />
             <p className="text-sm md:text-lg font-semibold">Trademilaan</p>
-          </NavLink>
+          </Link>
         </div>
 
         {/* Desktop menu */}
         <div className="hidden lg:flex">
           <Menu>
-            <MenuItem to="/">Home</MenuItem>
-            <MenuItem to="/services">Services</MenuItem>
-            <MenuItem to="/investor-charter">Investor Charter</MenuItem>
-            <MenuItem to="/disclaimer-disclosure">Disclaimer & Disclosure</MenuItem>
-            <MenuItem to="/mitc">MITC</MenuItem>
-            <MenuItem to="/contact">Contact Us</MenuItem>
+            <MenuItem href="/">Home</MenuItem>
+            <MenuItem href="/services">Services</MenuItem>
+            <MenuItem href="/investor-charter">Investor Charter</MenuItem>
+            <MenuItem href="/disclaimer-disclosure">Disclaimer & Disclosure</MenuItem>
+            <MenuItem href="/mitc">MITC</MenuItem>
+            <MenuItem href="/contact">Contact Us</MenuItem>
           </Menu>
         </div>
 
@@ -49,27 +50,27 @@ export function Navbar() {
         </button>
 
         {/* CTA */}
-        <NavLink
-          to="/enquire"
+        <Link
+          href="/contact"
           className="shrink-0 rounded-full bg-[#9BE749] px-3 md:px-6 py-1.5 md:py-2 text-sm md:text-base font-medium"
         >
           Enquire Now
-        </NavLink>
+        </Link>
       </div>
 
       {/* Mobile overlay menu */}
       {mobileOpen && (
         <div id="mobile-menu" className="lg:hidden">
-          <div className="fixed inset-0 z-[60] bg-black/30" onClick={closeMobile} />
+          <div className="fixed inset-0 z-60 bg-black/30" onClick={closeMobile} />
           <div className="fixed top-16 left-0 right-0 z-[61] px-4">
             <div className="mx-auto max-w-[90vw] rounded-2xl border bg-white shadow-xl">
               <div className="flex flex-col p-4 gap-3">
-                <NavLink to="/" onClick={closeMobile} className="py-2">Home</NavLink>
-                <NavLink to="/services" onClick={closeMobile} className="py-2">Services</NavLink>
-                <NavLink to="/investor-charter" onClick={closeMobile} className="py-2">Investor Charter</NavLink>
-                <NavLink to="/disclaimer-disclosure" onClick={closeMobile} className="py-2">Disclaimer & Disclosure</NavLink>
-                <NavLink to="/mitc" onClick={closeMobile} className="py-2">MITC</NavLink>
-                <NavLink to="/contact" onClick={closeMobile} className="py-2">Contact Us</NavLink>
+                <Link href="/" onClick={closeMobile} className="py-2">Home</Link>
+                <Link href="/services" onClick={closeMobile} className="py-2">Services</Link>
+                <Link href="/investor-charter" onClick={closeMobile} className="py-2">Investor Charter</Link>
+                <Link href="/disclaimer-disclosure" onClick={closeMobile} className="py-2">Disclaimer & Disclosure</Link>
+                <Link href="/mitc" onClick={closeMobile} className="py-2">MITC</Link>
+                <Link href="/contact" onClick={closeMobile} className="py-2">Contact Us</Link>
               </div>
             </div>
           </div>

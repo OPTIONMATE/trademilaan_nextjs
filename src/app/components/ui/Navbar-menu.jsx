@@ -1,6 +1,8 @@
+"use client";
 import React, { useRef, useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { NavLink, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 /**
  * Menu:
@@ -10,7 +12,7 @@ import { NavLink, useLocation } from "react-router-dom";
 export const Menu = ({ children }) => {
   const navRef = useRef(null);
   const [indicator, setIndicator] = useState(null);
-  const location = useLocation();
+  const pathname = usePathname();
 
   const moveIndicatorToEl = (el) => {
     if (!el || !navRef.current) return;
@@ -35,7 +37,7 @@ export const Menu = ({ children }) => {
   // On route change → sync indicator
   useEffect(() => {
     moveToActiveRoute();
-  }, [location.pathname]);
+  }, [pathname]);
 
   return (
     <div
@@ -68,18 +70,19 @@ export const Menu = ({ children }) => {
  * - reports hover
  * - exposes active state
  */
-export const MenuItem = ({ to, children, onHover }) => {
+export const MenuItem = ({ href, children, onHover }) => {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+  
   return (
-    <NavLink to={to}>
-      {({ isActive }) => (
-        <span
-          data-active={isActive ? "true" : "false"}
-          onMouseEnter={(e) => onHover && onHover(e.currentTarget)}
-          className="cursor-pointer font-medium text-black dark:text-white text-sm lg:text-base whitespace-nowrap"
-        >
-          {children}
-        </span>
-      )}
-    </NavLink>
+    <Link href={href}>
+      <span
+        data-active={isActive ? "true" : "false"}
+        onMouseEnter={(e) => onHover && onHover(e.currentTarget)}
+        className="cursor-pointer font-medium text-black dark:text-white text-sm lg:text-base whitespace-nowrap"
+      >
+        {children}
+      </span>
+    </Link>
   );
 };

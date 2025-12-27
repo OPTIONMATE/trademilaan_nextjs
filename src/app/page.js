@@ -1,7 +1,6 @@
 import { BackgroundRipple } from './components/BackgroundRipple';
 import TextPara from './components/TextPara';
 import Cards from './components/Cards';
-import Footer from './components/Footer';
 
 export default function Home() {
   return (
@@ -9,7 +8,6 @@ export default function Home() {
       <BackgroundRipple />
       <TextPara />
       <Cards />
-      <Footer />
     </>
   );
 }

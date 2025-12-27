@@ -58,22 +58,20 @@ const Block = ({ className, ...rest }) => {
 
 const HeaderBlock = () => (
   <Block className="col-span-12 row-span-2 md:col-span-6">
-    <img
-      src="https://api.dicebear.com/8.x/lorelei-neutral/svg?seed=John"
-      alt="avatar"
-      className="mb-4 size-14 rounded-full"
-    />
+    <div className="mb-4 size-14 rounded-full bg-[#9BE749] flex items-center justify-center text-3xl">
+      📊
+    </div>
     <h1 className="mb-12 text-4xl font-medium leading-tight">
-      Hi, I'm Tom.{" "}
+      Trademilaan.{" "}
       <span className="text-zinc-400">
-        I build cool websites like this one.
+        AI-Powered Market Insights for Smarter Trading.
       </span>
     </h1>
     <a
-      href="#"
-      className="flex items-center gap-1 text-red-300 hover:underline"
+      href="/contact"
+      className="flex items-center gap-1 text-[#9BE749] hover:underline"
     >
-      Contact me <FiArrowRight />
+      Contact us <FiArrowRight />
     </a>
   </Block>
 );
@@ -154,11 +152,9 @@ const SocialsBlock = () => (
 const AboutBlock = () => (
   <Block className="col-span-12 text-3xl leading-snug">
     <p>
-      My passion is building cool stuff.{" "}
+      Our mission is empowering traders.{" "}
       <span className="text-zinc-400">
-        I build primarily with React, Tailwind CSS, and Framer Motion. I love
-        this stack so much that I even built a website about it. I've made over
-        a hundred videos on the subject across YouTube and TikTok.
+        Sasikumar Peyyala leverages advanced AI and machine learning to simplify complex market data into actionable insights. With nine years of financial expertise, we develop research-driven models that help traders and investors make smarter, faster, and more confident decisions in dynamic markets.
       </span>
     </p>
   </Block>
@@ -167,13 +163,13 @@ const AboutBlock = () => (
 const LocationBlock = () => (
   <Block className="col-span-12 flex flex-col items-center gap-4 md:col-span-3">
     <FiMapPin className="text-3xl" />
-    <p className="text-center text-lg text-zinc-400">Cyberspace</p>
+    <p className="text-center text-lg text-zinc-400">Vijayawada, Andhra Pradesh</p>
   </Block>
 );
 
 const EmailListBlock = () => (
   <Block className="col-span-12 md:col-span-9">
-    <p className="mb-3 text-lg">Join my mailing list</p>
+    <p className="mb-3 text-lg">Get Market Insights & Updates</p>
     <form
       onSubmit={(e) => e.preventDefault()}
       className="flex items-center gap-2"
@@ -181,13 +177,13 @@ const EmailListBlock = () => (
       <input
         type="email"
         placeholder="Enter your email"
-        className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 transition-colors focus:border-red-300 focus:outline-0"
+        className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 transition-colors focus:border-[#9BE749] focus:outline-0"
       />
       <button
         type="submit"
-        className="flex items-center gap-2 whitespace-nowrap rounded bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-300"
+        className="flex items-center gap-2 whitespace-nowrap rounded bg-[#9BE749] px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-[#8BD639]"
       >
-        <FiMail /> Join the list
+        <FiMail /> Subscribe
       </button>
     </form>
   </Block>

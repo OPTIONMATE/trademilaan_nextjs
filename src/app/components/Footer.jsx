@@ -6,11 +6,11 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const quickLinks = [
-    { name: 'Grievance Redressal', path: '/grievance' },
+    { name: 'Grievance Redressal', path: '/grievance-redressal' },
     { name: 'MITC', path: '/mitc' },
-    { name: 'Terms and Condition', path: '/terms' },
+    { name: 'Terms and Condition', path: '/terms-and-condition' },
     { name: 'Refund Policy', path: '/refund-policy' },
-    { name: 'Complaint Board', path: '/complaints' },
+    { name: 'Complaint Board', path: '/complaint-board' },
     { name: 'Privacy Policy', path: '/privacy-policy' },
   ];
 

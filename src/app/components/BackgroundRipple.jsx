@@ -27,9 +27,9 @@ export function BackgroundRipple() {
   return (
     <div className="relative flex min-h-screen w-full flex-col items-start justify-start overflow-hidden">
       {/* Background */}
-      {/* <div className="absolute inset-0 opacity-40">
+      <div className="absolute inset-0 opacity-40">
         <BackgroundRippleEffect />
-      </div> */}
+      </div>
 
       {/* Arch */}
       <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-full max-w-4xl h-56">

@@ -13,7 +13,7 @@ export default function Home() {
       <LogoutButton />
       <BackgroundRipple />
       
-    
+      <TextPara />
       <Cards />
       <RevealBento />
     </Protected>

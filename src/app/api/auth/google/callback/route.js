@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
-import User from "@/app/models/User";
+import User from "@/app/lib/models/User";
 import { signToken } from "@/app/lib/jwt";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  if (!code)
+
+  if (!code) {
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_BASE_URL}/login`
     );
+  }
 
   // Exchange code for token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -23,9 +25,10 @@ export async function GET(req) {
       grant_type: "authorization_code",
     }),
   });
+
   const tokenData = await tokenRes.json();
 
-  // Get user info
+  // Fetch user info
   const userInfo = await fetch(
     "https://www.googleapis.com/oauth2/v2/userinfo",
     {
@@ -36,22 +39,30 @@ export async function GET(req) {
   ).then((r) => r.json());
 
   await connectDB();
+
   let user = await User.findOne({ email: userInfo.email });
   if (!user) {
     user = await User.create({
       email: userInfo.email,
       googleId: userInfo.id,
+      disclaimerAccepted: false,
     });
   }
 
   const jwt = signToken(user);
+
+  // ✅ ABSOLUTE URL REQUIRED
   const res = NextResponse.redirect(
     `${process.env.NEXT_PUBLIC_BASE_URL}/disclaimer`
   );
+
   res.cookies.set("token", jwt, {
     httpOnly: true,
-    path: "/",
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
   });
+
   return res;
 }

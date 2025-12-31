@@ -62,24 +62,6 @@ Trademilaan is built by **Sasikumar Peyyala**, a SEBI-registered research analys
    npm install
    ```
 
-3. **Set up environment variables**
-   Create a `.env.local` file in the root directory:
-   ```env
-   # Database
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/trademilaan
-
-   # JWT Secret
-   JWT_SECRET=your_jwt_secret_key_here
-
-   # Google OAuth (optional)
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
-
-   # App URL
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ```
-
 4. **Run the development server**
    ```bash
    npm run dev

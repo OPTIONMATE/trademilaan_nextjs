@@ -54,7 +54,7 @@ const cardVariants = {
           transition={{ duration: 0.5 }}
           className="text-center max-w-4xl mx-auto mb-14 md:mb-16"
         >
-          <p className="text-xs md:text-sm tracking-[0.35em] text-teal-600 font-semibold uppercase mb-4">
+          <p className="text-md md:text-md tracking-[0.35em] text-lime-600 font-semibold uppercase mb-4">
             Investor Protection
           </p>
           <h2 className="text-3xl md:text-5xl font-bold text-neutral-900 leading-tight">
@@ -79,13 +79,13 @@ const cardVariants = {
                   duration: 0.3,
                 },
               }}
-              className="relative bg-white border-2 border-gray-200 rounded-lg p-6 md:p-7 min-h-[160px] flex flex-col items-center justify-center text-center transition-all duration-300 hover:border-teal-500 hover:shadow-[0_8px_24px_rgba(13,148,136,0.12)]"
+              className="relative bg-white border-2 border-gray-200 rounded-lg p-6 md:p-7 min-h-[160px] flex flex-col items-center justify-baseline text-center transition-all duration-300 hover:border-lime-500/70 hover:shadow-[0_8px_24px_rgba(13,148,136,0.12)]"
             >
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-                className="w-10 h-10 mb-3 rounded-full bg-teal-500 flex items-center justify-center"
+                className="w-10 h-10 mb-3 rounded-full bg-purple-500/50 flex items-center justify-center"
               >
                 <span className="text-white font-bold text-sm">{i + 1}</span>
               </motion.div>

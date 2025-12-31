@@ -6,13 +6,14 @@ import Protected from "./components/Protected";
 import LogoutButton from "./components/LogoutButton";
 import { RevealBento } from './components/Blocks';
 
+
 export default function Home() {
   return (
     <Protected>
       <LogoutButton />
       <BackgroundRipple />
       
-      <TextPara />
+    
       <Cards />
       <RevealBento />
     </Protected>

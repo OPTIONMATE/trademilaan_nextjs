@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function IndexOptionsPro() {
   return (
@@ -31,10 +32,11 @@ export default function IndexOptionsPro() {
           <li><b>Subscription Type:</b> Regular.</li>
           <li><b>Specialities:</b> AI-based strike and price selection.</li>
         </ul>
-
-        <button className="mt-6 bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition">
+        <Link href={"https://superprofile.bio/trademilaan/pjnlqxfXpq"}>
+        <button className="mt-6 bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition cursor-pointer">
           Buy Now @ 4599 Per Month
         </button>
+        </Link>
       </div>
     </section>
   );

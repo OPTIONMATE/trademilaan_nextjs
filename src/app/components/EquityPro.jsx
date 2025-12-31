@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function EquityPro() {
   return (
@@ -20,10 +21,12 @@ export default function EquityPro() {
           <li><b>Subscription Type:</b> Regular.</li>
           <li><b>Specialities:</b> Data analysis & ML-based stock selection.</li>
         </ul>
-
-        <button className="mt-6 bg-sky-500 text-white px-6 py-3 rounded-md hover:bg-sky-600 transition">
+        
+        <Link href={"https://superprofile.bio/trademilaan/akWEMhzKEs"}>
+        <button className="mt-6 bg-sky-500 text-white px-6 py-3 rounded-md hover:bg-sky-600 transition cursor-pointer">
           Buy Now
         </button>
+        </Link>
       </div>
 
       {/* Image */}

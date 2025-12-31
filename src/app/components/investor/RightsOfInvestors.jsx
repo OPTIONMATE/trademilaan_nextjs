@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { WobbleCard } from "../ui/wobble-card";
 
 const rights = [
     "Right to Privacy and Confidentiality",
@@ -32,7 +33,7 @@ const containerVariants = {
 const cardVariants = {
   hidden: {
     opacity: 0,
-    y: 30,
+    y: 20,
   },
   show: {
     opacity: 1,
@@ -43,60 +44,59 @@ const cardVariants = {
     },
   },
 };
-  
-  export default function RightsOfInvestors() {
-    return (
-      <section className="w-full py-20 md:py-24 px-5 sm:px-8 bg-gradient-to-b from-white to-gray-50">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-4xl mx-auto mb-14 md:mb-16"
-        >
-          <p className="text-md md:text-md tracking-[0.35em] text-lime-600 font-semibold uppercase mb-4">
-            Investor Protection
-          </p>
-          <h2 className="text-3xl md:text-5xl font-bold text-neutral-900 leading-tight">
-            Rights of Investors
-          </h2>
-        </motion.div>
-  
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 max-w-7xl mx-auto"
-        >
-          {rights.map((text, i) => (
-            <motion.div
-              key={i}
-              variants={cardVariants}
-              whileHover={{
-                y: -4,
-                transition: {
-                  duration: 0.3,
-                },
-              }}
-              className="relative bg-white border-2 border-gray-200 rounded-lg p-6 md:p-7 min-h-[160px] flex flex-col items-center justify-baseline text-center transition-all duration-300 hover:border-lime-500/70 hover:shadow-[0_8px_24px_rgba(13,148,136,0.12)]"
+
+export default function RightsOfInvestors() {
+  return (
+    <section className="w-full py-12 md:py-20 lg:py-24 px-5 sm:px-8 bg-gradient-to-b from-[#f8fafc] via-white to-[#f8fafc]">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.5 }}
+        className="text-center max-w-4xl mx-auto mb-14 md:mb-16 space-y-3"
+      >
+        <p className="text-xs md:text-sm tracking-[0.3em] text-lime-600 font-semibold uppercase">
+          Investor Protection
+        </p>
+        <h2 className="text-3xl md:text-5xl font-bold text-neutral-900 leading-tight">
+          Rights of Investors
+        </h2>
+        <p className="text-sm md:text-base text-slate-600 max-w-2xl mx-auto">
+          Each right is backed by our SEBI-compliant processes to keep your trading journey transparent, fair, and secure.
+        </p>
+      </motion.div>
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 max-w-6xl mx-auto"
+      >
+        {rights.map((text, i) => (
+          <motion.div key={i} variants={cardVariants} className="h-full">
+            <WobbleCard
+              containerClassName="h-full border border-purple-400 bg-purple-200/60"
+              className="flex h-full flex-col gap-4 justify-start items-start text-left"
             >
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-                className="w-10 h-10 mb-3 rounded-full bg-purple-500/50 flex items-center justify-center"
-              >
-                <span className="text-white font-bold text-sm">{i + 1}</span>
-              </motion.div>
-              
-              <p className="text-sm md:text-base font-medium text-neutral-700 leading-relaxed">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#9BE749] to-[#6d5bff] text-neutral-900 font-semibold shadow-[0_10px_30px_rgba(109,91,255,0.18)]">
+                  {i + 1}
+                </span>
+                <div className="space-y-1">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Right</p>
+                  <p className="text-sm font-semibold text-neutral-500">Investor Protection</p>
+                </div>
+              </div>
+
+              <p className="text-sm md:text-base leading-relaxed text-slate-900">
                 {text}
               </p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-    );
-  }
+            </WobbleCard>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
   

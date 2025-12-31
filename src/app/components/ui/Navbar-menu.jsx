@@ -72,7 +72,8 @@ export const Menu = ({ children }) => {
  */
 export const MenuItem = ({ href, children, onHover }) => {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive =
+    href === "/" ? pathname === href : pathname === href || pathname?.startsWith(`${href}/`);
   
   return (
     <Link href={href}>

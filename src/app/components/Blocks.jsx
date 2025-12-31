@@ -13,7 +13,8 @@ export const RevealBento = () => {
       </div>
       <motion.div
         initial="initial"
-        animate="animate"
+        whileInView="animate"
+        viewport={{ once: true, amount: 0.1 }}
         transition={{
           staggerChildren: 0.05,
         }}

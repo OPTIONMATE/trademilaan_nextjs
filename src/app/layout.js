@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import { CursorTrailer } from "./components/CursorTrailer";
 
 import { AuthProvider} from "./context/AuthContext";
+import AppFrame from "./components/AppFrame";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,9 +33,9 @@ export default function RootLayout({ children }) {
         <CursorTrailer />
       
        <AuthProvider>
-        <Navbar />
-        {children}
-        <Footer />
+        <AppFrame>
+          {children}
+        </AppFrame>
       </AuthProvider>
         
       </body>

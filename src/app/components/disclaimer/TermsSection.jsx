@@ -1,7 +1,9 @@
 export default function TermsSection() {
   return (
     <div className="max-w-7xl mx-auto py-12 px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-      <div className="w-full h-72 bg-gray-200 rounded-xl"></div>
+      <div className="w-full h-96 bg-gray-200 rounded-xl overflow-hidden">
+        <img src="/terms.jpg" alt="" className="h-full w-full object-cover" />
+      </div>
 
       <div>
         <h2 className="text-2xl font-bold mb-4">

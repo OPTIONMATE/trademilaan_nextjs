@@ -5,8 +5,8 @@ import User from "@/app/lib/models/User";
 import { signToken } from "@/app/lib/jwt";
 
 export async function POST(req) {
-  const { email, password } = await req.json();
-  if (!email || !password)
+  const { email, password, username } = await req.json();
+  if (!email || !password || !username)
     return NextResponse.json({ message: "Missing fields" }, { status: 400 });
 
   await connectDB();
@@ -16,7 +16,7 @@ export async function POST(req) {
     return NextResponse.json({ message: "User already exists" }, { status: 400 });
 
   const hash = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hash });
+  const user = await User.create({ email, password: hash, username });
 
   const token = signToken(user);
 

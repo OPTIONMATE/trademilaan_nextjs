@@ -27,13 +27,13 @@ export function CursorTrailer() {
         const el = document.elementFromPoint(e.clientX, e.clientY);
         const interactive =
           el?.closest("button, a, [role='button']") ||
-          window.getComputedStyle(el)?.cursor === "pointer";
+          (el && window.getComputedStyle(el)?.cursor === "pointer");
 
         setIsHovering(Boolean(interactive));
       }
 
-      // Fewer particles
-      if (Math.random() > 0.9) {
+      // More particles
+      if (Math.random() > 0.75) {
         const id = particleId.current++;
 
         setParticles((p) => [...p, { id, x: e.clientX, y: e.clientY }]);

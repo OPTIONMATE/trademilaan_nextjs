@@ -8,6 +8,7 @@ import GoogleLoginBtn from "./GoogleLoginBtn";
 
 export default function AuthForm({ type }) {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -22,10 +23,12 @@ export default function AuthForm({ type }) {
     e.preventDefault();
     setError("");
 
+    const payload = type === "register" ? { email, password, username } : { email, password };
+
     const res = await fetch(`/api/auth/${type}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -60,6 +63,20 @@ export default function AuthForm({ type }) {
             {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {type === "register" && (
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-neutral-800">Name</span>
+                  <input
+                    type="text"
+                    placeholder="Your full name"
+                    required
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </label>
+              )}
+
               <label className="block space-y-2">
                 <span className="text-sm font-semibold text-neutral-800">Email</span>
                 <input

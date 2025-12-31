@@ -1,37 +1,65 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { FiEye, FiTarget } from "react-icons/fi";
+
 export default function VisionMission() {
+  const items = [
+    {
+      title: "Vision",
+      text: "Invest with knowledge and safety to secure your financial future. Make informed decisions, minimize risks, and grow your wealth confidently with expert guidance and smart strategies.",
+      icon: FiEye,
+    },
+    {
+      title: "Mission",
+      text: "Every investor should be able to invest in right investment products based on their needs, manage and monitor them to meet their goals, access reports and enjoy financial wellness.",
+      icon: FiTarget,
+    },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto py-12 px-4">
-      <h2 className="text-center text-2xl font-bold mb-10">
-        Vision and Mission Statements for investors
-      </h2>
+    <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#f6f9ff] to-white py-16 px-4">
+      <div className="pointer-events-none absolute inset-0 opacity-60 blur-3xl" aria-hidden>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl shadow shadow-2xl p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500 flex items-center justify-center text-2xl text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#F3F3F3"><path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/></svg>
-          </div>
-          
-
-          <h3 className="text-xl font-semibold mb-3">Vision</h3>
-          <p className="text-gray-600">
-            Invest with knowledge and safety to secure your financial future.
-            Make informed decisions, minimize risks, and grow your wealth
-            confidently with expert guidance and smart strategies.
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-10">
+        <div className="text-center max-w-4xl mx-auto space-y-3">
+          <p className="text-xs md:text-sm font-semibold uppercase tracking-[0.25em] text-neutral-500">
+            Strategic Direction
           </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-neutral-900">
+            Vision and Mission Statements for investors
+          </h2>
         </div>
 
-        <div className="bg-white rounded-xl shadow shadow-2xl p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500 flex items-center justify-center text-2xl text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#F3F3F3"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-80q-100 0-170-70t-70-170q0-100 70-170t170-70q100 0 170 70t70 170q0 100-70 170t-170 70Zm0-80q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47Zm0-80q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Z"/></svg>
-          </div>
-          <h3 className="text-xl font-semibold mb-3">Mission</h3>
-          <p className="text-gray-600">
-            Every investor should be able to invest in right investment products
-            based on their needs, manage and monitor them to meet their goals,
-            access reports and enjoy financial wellness.
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+          {items.map(({ title, text, icon: Icon }, idx) => (
+            <motion.div
+              key={title}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.35, delay: idx * 0.1 }}
+              whileHover={{ y: -4 }}
+              className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 p-8 shadow-[0_20px_60px_rgba(17,24,39,0.08)] backdrop-blur hover:border-purple-400/50 transition-all duration-300"
+            >
+              <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#9BE749]/8 transition-all duration-500" aria-hidden />
+              
+              <div className="relative z-10 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#9BE749] to-[#6d5bff] text-white shadow-md">
+                    <Icon size={22} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-neutral-900">{title}</h3>
+                </div>
+                <p className="text-base leading-relaxed text-neutral-700">
+                  {text}
+                </p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

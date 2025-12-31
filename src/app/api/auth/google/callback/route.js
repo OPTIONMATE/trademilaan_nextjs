@@ -45,8 +45,12 @@ export async function GET(req) {
     user = await User.create({
       email: userInfo.email,
       googleId: userInfo.id,
+      username: userInfo.name || userInfo.email?.split("@")[0] || "User",
       disclaimerAccepted: false,
     });
+  } else if (!user.username) {
+    user.username = userInfo.name || userInfo.email?.split("@")[0] || "User";
+    await user.save();
   }
 
   const jwt = signToken(user);

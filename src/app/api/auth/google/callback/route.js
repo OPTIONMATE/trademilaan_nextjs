@@ -56,9 +56,12 @@ export async function GET(req) {
   const jwt = signToken(user);
 
   // ✅ ABSOLUTE URL REQUIRED
-  const res = NextResponse.redirect(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/disclaimer`
-  );
+  const redirectUrl = user.disclaimerAccepted
+  ? `${process.env.NEXT_PUBLIC_BASE_URL}/`
+  : `${process.env.NEXT_PUBLIC_BASE_URL}/disclaimer`;
+
+const res = NextResponse.redirect(redirectUrl);
+
 
   res.cookies.set("token", jwt, {
     httpOnly: true,

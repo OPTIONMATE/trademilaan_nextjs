@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { signToken } from "@/app/lib/jwt";
+import { sendTermsAndConditionsMail } from "@/app/lib/mailer";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -41,6 +42,7 @@ export async function GET(req) {
   await connectDB();
 
   let user = await User.findOne({ email: userInfo.email });
+  let isNewUser = false;
   if (!user) {
     user = await User.create({
       email: userInfo.email,
@@ -48,12 +50,19 @@ export async function GET(req) {
       username: userInfo.name || userInfo.email?.split("@")[0] || "User",
       disclaimerAccepted: false,
     });
+    isNewUser = true;
   } else if (!user.username) {
     user.username = userInfo.name || userInfo.email?.split("@")[0] || "User";
     await user.save();
   }
 
   const jwt = signToken(user);
+
+  if (isNewUser) {
+    sendTermsAndConditionsMail(user.email).catch((err) =>
+      console.error("TERMS MAIL ERROR (GOOGLE, NON-BLOCKING)", err)
+    );
+  }
 
   // ✅ ABSOLUTE URL REQUIRED
   const redirectUrl = user.disclaimerAccepted

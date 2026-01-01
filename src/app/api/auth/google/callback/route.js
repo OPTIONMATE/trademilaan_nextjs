@@ -9,7 +9,7 @@ export async function GET(req) {
 
   if (!code) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/login`
+      `${process.env.PUBLIC_BASE_URL}/login`
     );
   }
 
@@ -21,7 +21,7 @@ export async function GET(req) {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID,
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/google/callback`,
+      redirect_uri: `${process.env.PUBLIC_BASE_URL}/api/auth/google/callback`,
       grant_type: "authorization_code",
     }),
   });
@@ -57,8 +57,8 @@ export async function GET(req) {
 
   // ✅ ABSOLUTE URL REQUIRED
   const redirectUrl = user.disclaimerAccepted
-  ? `${process.env.NEXT_PUBLIC_BASE_URL}/`
-  : `${process.env.NEXT_PUBLIC_BASE_URL}/disclaimer`;
+  ? `${process.env.PUBLIC_BASE_URL}/`
+  : `${process.env.PUBLIC_BASE_URL}/disclaimer`;
 
 const res = NextResponse.redirect(redirectUrl);
 

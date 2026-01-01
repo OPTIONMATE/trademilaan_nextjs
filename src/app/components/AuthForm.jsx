@@ -16,8 +16,8 @@ export default function AuthForm({ type }) {
 
   // If already logged in, redirect away
   useEffect(() => {
-    if (user) router.push("/");
-  }, [user]);
+    if (user && type === "login") router.push("/");
+  }, [user, type, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

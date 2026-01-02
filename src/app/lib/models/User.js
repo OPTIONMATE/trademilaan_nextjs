@@ -7,6 +7,11 @@ const UserSchema = new mongoose.Schema(
     password: { type: String },
     googleId: { type: String },
     disclaimerAccepted: { type: Boolean, default: false },
+    role: {
+      type: String,
+      enum: ["admin", "user"],
+      default: "user",
+    },
   },
   { timestamps: true }
 );

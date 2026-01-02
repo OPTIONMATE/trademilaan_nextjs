@@ -56,6 +56,11 @@ export async function GET(req) {
     await user.save();
   }
 
+  if (!user.role) {
+    user.role = "user";
+    await user.save();
+  }
+
   const jwt = signToken(user);
 
   if (isNewUser) {
@@ -66,11 +71,10 @@ export async function GET(req) {
 
   // ✅ ABSOLUTE URL REQUIRED
   const redirectUrl = user.disclaimerAccepted
-  ? `${process.env.PUBLIC_BASE_URL}/`
-  : `${process.env.PUBLIC_BASE_URL}/disclaimer`;
+    ? `${process.env.PUBLIC_BASE_URL}/`
+    : `${process.env.PUBLIC_BASE_URL}/disclaimer`;
 
-const res = NextResponse.redirect(redirectUrl);
-
+  const res = NextResponse.redirect(redirectUrl);
 
   res.cookies.set("token", jwt, {
     httpOnly: true,

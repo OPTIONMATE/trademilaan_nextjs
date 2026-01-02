@@ -12,6 +12,12 @@ export async function GET(req) {
     const decoded = verifyToken(token);
     await connectDB();
     const user = await User.findById(decoded.id).select("-password");
+
+    if (user && !user.role) {
+      user.role = "user";
+      await user.save();
+    }
+
     return NextResponse.json({ user });
   } catch {
     return NextResponse.json({ user: null }, { status: 401 });

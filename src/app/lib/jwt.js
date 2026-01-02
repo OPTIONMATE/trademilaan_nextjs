@@ -4,7 +4,7 @@ const SECRET = process.env.JWT_SECRET;
 
 export const signToken = (user) =>
   jwt.sign(
-    { id: user._id.toString(), email: user.email },
+    { id: user._id.toString(), email: user.email, role: user.role },
     SECRET,
     { expiresIn: "7d" }
   );

@@ -5,15 +5,21 @@ import { cn } from "@/app/lib/utils";
 
 export default function LogoutButton({ className = "", label = "Logout", onLoggedOut }) {
   const router = useRouter();
-  const { setUser } = useAuth();
+  const { setUser, setLoggingOut } = useAuth();
 
   const logout = async () => {
+    setLoggingOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     if (onLoggedOut) onLoggedOut();
+    
+    // Keep overlay visible for smooth transition, then redirect
+    setTimeout(() => {
+      setLoggingOut(false);
+    }, 1200);
     router.push("/login");
   };
-
+  
   return (
     <button
       onClick={logout}

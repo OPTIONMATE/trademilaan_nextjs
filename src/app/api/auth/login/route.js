@@ -15,6 +15,11 @@ export async function POST(req) {
   if (!user || !user.password)
     return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
 
+  if (!user.role) {
+    user.role = "user";
+    await user.save();
+  }
+
   const ok = await bcrypt.compare(password, user.password);
   if (!ok)
     return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });

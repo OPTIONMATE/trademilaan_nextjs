@@ -16,8 +16,10 @@ export default function LogoutButton({ className = "", label = "Logout", onLogge
     // Keep overlay visible for smooth transition, then redirect
     setTimeout(() => {
       setLoggingOut(false);
-      router.push("/login");
+      // router.push("/login");
     }, 1200);
+
+    router.push("/login");
   };
   
   return (

@@ -5,13 +5,7 @@ export default function GrievanceRedressal() {
     <div className="w-full bg-white">
       {/* ===== Hero Banner ===== */}
       <div className="relative h-[260px] w-full flex items-center justify-center">
-        <Image
-          src="/grievance-banner.jpg" // place banner image in public/
-          alt="Grievance Redressal"
-          fill
-          className="object-cover"
-          priority
-        />
+       
         <div className="absolute inset-0 bg-black/60"></div>
         <h1 className="relative z-10 text-white text-4xl md:text-5xl font-bold">
           Grievance Redressal

@@ -4,6 +4,11 @@ import connectDB from "@/app/lib/db";
 import { verifyToken } from "@/app/lib/jwt";
 import User from "@/app/lib/models/User";
 
+export const metadata = {
+  title: "Admin Dashboard - Trademilaan",
+  description: "Admin dashboard for managing Trademilaan users and services.",
+};
+
 async function requireAdmin() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;

@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import SignaturePad from "react-signature-canvas";
+// import SignaturePad from "react-signature-canvas";
+
+
+import dynamic from "next/dynamic";
+
+const SignaturePad = dynamic(() => import("react-signature-canvas"), {
+  ssr: false,
+});
 
 export default function ESignModal({ onClose, onSaved, pdfUrl }) {
   const [tab, setTab] = useState("typed");

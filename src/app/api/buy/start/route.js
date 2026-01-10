@@ -47,7 +47,19 @@ export async function POST(req) {
   user.dob = dob;
   user.gender = gender;
   user.state = state;
-  user.email = email; // allow email override
+  // Normalize email
+  const normalizedEmail = String(email).trim().toLowerCase();
+  // Only update email if it changes and isn't used by another account
+  if (normalizedEmail !== (user.email || "").toLowerCase()) {
+    const existing = await User.exists({ email: normalizedEmail, _id: { $ne: user._id } });
+    if (existing) {
+      return NextResponse.json(
+        { message: "Email already in use by another account" },
+        { status: 409 }
+      );
+    }
+    user.email = normalizedEmail;
+  }
   user.panNumber = panNumber;
   user.emailOtp = otp;
   user.emailOtpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 mins

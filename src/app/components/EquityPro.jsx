@@ -30,14 +30,8 @@ export default function EquityPro() {
       </div>
 
       {/* Image */}
-      <div className="bg-gray-200 rounded-2xl p-6 flex justify-center">
-        <Image
-          src="/service2.png"
-          alt="TradeMilaan Equity Pro"
-          width={500}
-          height={350}
-          className="w-full h-auto object-contain"
-        />
+      <div className=" rounded-2xl p-6 flex justify-center">
+       <img src="/service1.jpg" alt="TradeMilaan Equity Pro" className="rounded-2xl w-full h-auto object-cover" />
       </div>
     </section>
   );

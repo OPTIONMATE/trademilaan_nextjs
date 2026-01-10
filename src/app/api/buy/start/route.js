@@ -5,16 +5,17 @@ import User from "@/app/lib/models/User";
 import { transporter } from "@/app/lib/mailer";
 
 export async function POST(req) {
-  const { username, panNumber } = await req.json();
+  const { fullName, dob, gender, state, email, panNumber } = await req.json();
 
-  if (!username || !panNumber) {
+  // 1. Basic validation
+  if (!fullName || !dob || !gender || !state || !email || !panNumber) {
     return NextResponse.json(
-      { message: "Username and PAN are required" },
+      { message: "All fields are required" },
       { status: 400 }
     );
   }
 
-  // PAN format validation
+  // 2. PAN format validation
   const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
   if (!panRegex.test(panNumber)) {
     return NextResponse.json(
@@ -23,11 +24,9 @@ export async function POST(req) {
     );
   }
 
-  // 🔐 Read token from cookie
+  // 3. Get logged-in user from cookie
   const token = req.cookies.get("token")?.value;
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   let decoded;
   try {
@@ -37,35 +36,31 @@ export async function POST(req) {
   }
 
   await connectDB();
-
   const user = await User.findById(decoded.id);
-  if (!user) {
-    return NextResponse.json({ message: "User not found" }, { status: 404 });
-  }
 
-  // Generate OTP
+  if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 });
+
+  // 4. Save details & generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  user.username = username;
+  user.fullName = fullName;
+  user.dob = dob;
+  user.gender = gender;
+  user.state = state;
+  user.email = email; // allow email override
   user.panNumber = panNumber;
   user.emailOtp = otp;
-  user.emailOtpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  user.emailOtpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
   await user.save();
 
-  // 📧 Send OTP email using EXISTING mailer
+  // 5. Send OTP email
   await transporter.sendMail({
     from: process.env.MAIL_FROM || process.env.MAIL_USER,
     to: user.email,
     subject: "TradeMilaan – Email Verification OTP",
-    html: `
-      <p>Your OTP for verification is:</p>
-      <h2 style="letter-spacing:2px;">${otp}</h2>
-      <p>This OTP is valid for 5 minutes.</p>
-    `,
+    html: `<p>Your OTP is <b>${otp}</b>. Valid for 5 minutes.</p>`,
   });
 
-  return NextResponse.json({
-    message: "OTP sent to your email",
-  });
+  return NextResponse.json({ message: "OTP sent!" });
 }

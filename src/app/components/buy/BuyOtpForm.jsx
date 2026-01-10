@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function BuyOtpForm({ onSuccess }) {
+export default function BuyOtpForm() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const verify = async () => {
     setError("");
@@ -25,7 +27,8 @@ export default function BuyOtpForm({ onSuccess }) {
       return;
     }
 
-    onSuccess();
+    // 👇 redirect to agreement page here
+    router.push("/agreement");
   };
 
   return (

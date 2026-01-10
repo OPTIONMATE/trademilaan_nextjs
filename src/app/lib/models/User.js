@@ -3,28 +3,43 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema(
   {
     username: { type: String, trim: true },
-
     email: { type: String, unique: true, sparse: true },
-
     password: { type: String },
-
     googleId: { type: String },
-
     disclaimerAccepted: { type: Boolean, default: false },
 
-    // 🔽 BUY FLOW FIELDS
+    // NEW FIELDS
+    fullName: { type: String },
+    dob: { type: String },
+    gender: { type: String },
+    state: { type: String },
     panNumber: { type: String },
     panVerified: { type: Boolean, default: false },
 
     emailOtp: { type: String },
     emailOtpExpiry: { type: Date },
 
+    signature: {
+  type: String, // base64 or URL
+  default: null,
+},
+signatureType: {
+  type: String,
+  enum: ["typed", "drawn", "uploaded", null],
+  default: null,
+},
+
+
     role: {
       type: String,
       enum: ["admin", "user"],
       default: "user",
     },
+       // ⬇️ NEW FIELDS FOR PDF AGREEMENT
+    pdfAccepted: { type: Boolean, default: false },
+    pdfAcceptedAt: { type: Date, default: null },
   },
+  
   { timestamps: true }
 );
 

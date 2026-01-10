@@ -19,6 +19,17 @@ const UserSchema = new mongoose.Schema(
     emailOtp: { type: String },
     emailOtpExpiry: { type: Date },
 
+    signature: {
+  type: String, // base64 or URL
+  default: null,
+},
+signatureType: {
+  type: String,
+  enum: ["typed", "drawn", "uploaded", null],
+  default: null,
+},
+
+
     role: {
       type: String,
       enum: ["admin", "user"],
@@ -28,6 +39,7 @@ const UserSchema = new mongoose.Schema(
     pdfAccepted: { type: Boolean, default: false },
     pdfAcceptedAt: { type: Date, default: null },
   },
+  
   { timestamps: true }
 );
 

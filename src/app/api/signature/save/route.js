@@ -6,6 +6,7 @@ import User from "@/app/lib/models/User";
 export async function POST(req) {
   await connectDB();
 
+  // Read JWT from cookie
   const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
 
@@ -16,9 +17,13 @@ export async function POST(req) {
     return NextResponse.json({ error: "Invalid Token" }, { status: 403 });
   }
 
+  const { signature, signatureType } = await req.json();
+  if (!signature || !signatureType)
+    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+
   await User.findByIdAndUpdate(user.id, {
-    pdfAccepted: true,
-    pdfAcceptedAt: new Date()
+    signature,
+    signatureType,
   });
 
   return NextResponse.json({ success: true });

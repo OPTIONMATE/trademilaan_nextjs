@@ -8,7 +8,7 @@ export default function IndexOptionsPro() {
       {/* Image */}
       <div>
         <Image
-          src="/service1.jpg"
+          src="/service2.jpg"
           alt="TradeMilaan Index Options Pro"
           width={600}
           height={400}

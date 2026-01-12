@@ -1,10 +1,9 @@
 "use client";
 
 import { Document, Page, pdfjs } from "react-pdf";
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 
-// Worker file required for pdfjs
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function AgreementViewer({ fileUrl, onScrollEnd }) {
   const viewerRef = useRef(null);
@@ -19,7 +18,7 @@ export default function AgreementViewer({ fileUrl, onScrollEnd }) {
     if (!el) return;
 
     if (el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
-      onScrollEnd();
+      onScrollEnd?.();
     }
   };
 

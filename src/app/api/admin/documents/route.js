@@ -4,6 +4,7 @@ import { verifyToken } from "@/app/lib/jwt";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import Document from "@/app/lib/models/Document";
+import Agreement from "@/app/lib/models/Agreement";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/app/lib/cloudinary";
 
 async function requireAdmin() {
@@ -68,6 +69,8 @@ export async function GET(request) {
 }
 
 // POST - Upload a document
+
+
 export async function POST(request) {
   try {
     const user = await requireAdmin();
@@ -76,24 +79,13 @@ export async function POST(request) {
     const formData = await request.formData();
     const file = formData.get("document");
 
-    if (!file) {
-      return NextResponse.json({ message: "No file provided" }, { status: 400 });
-    }
-
-    if (!file.type || file.type !== "application/pdf") {
-      return NextResponse.json({ message: "Only PDF files are allowed" }, { status: 400 });
-    }
-
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create a safe filename
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
 
-    // Upload to Cloudinary
     const cloudinaryResult = await uploadToCloudinary(buffer, safeName);
 
-    // Save document metadata to MongoDB
     const document = await Document.create({
       filename: safeName,
       contentType: file.type,
@@ -104,6 +96,9 @@ export async function POST(request) {
       uploadedBy: user._id,
     });
 
+    // ⬇️ ADD THIS LINE
+    await Agreement.create({ fileUrl: cloudinaryResult.secureUrl });
+
     return NextResponse.json({
       message: "File uploaded successfully",
       filename: document.filename,
@@ -112,12 +107,10 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json(
-      { message: error.message || "Failed to upload file" },
-      { status: error.message === "Unauthorized" || error.message === "Invalid token" || error.message === "Admin access required" ? 403 : 500 }
-    );
+    return NextResponse.json({ message: "Failed to upload file" }, { status: 500 });
   }
 }
+
 
 // DELETE - Remove a document
 export async function DELETE(request) {

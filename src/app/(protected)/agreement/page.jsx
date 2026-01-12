@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AgreementViewer from "@/app/components/AgreementViewer";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import ESignModal from "@/app/components/ESignModal";
+
+// 🚀 Load AgreementViewer only in browser
+const AgreementViewer = dynamic(
+  () => import("@/app/components/AgreementViewer"),
+  { ssr: false }
+);
 
 export default function AgreementPage() {
   const [fileUrl, setFileUrl] = useState(null);
@@ -36,7 +42,10 @@ export default function AgreementPage() {
       {!fileUrl && <p>No PDF found.</p>}
 
       {fileUrl && (
-        <AgreementViewer fileUrl={fileUrl} onScrollEnd={() => setCanAccept(true)} />
+        <AgreementViewer
+          fileUrl={fileUrl}
+          onScrollEnd={() => setCanAccept(true)}
+        />
       )}
 
       {canAccept && (

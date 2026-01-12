@@ -1,14 +1,38 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
-import Agreement from "@/app/lib/models/Agreement";
+import Document from "@/app/lib/models/Document";
 
 export async function GET() {
   await connectDB();
-  const agreement = await Agreement.findOne().sort({ createdAt: -1 });
 
-  if (!agreement) {
-    return NextResponse.json({ fileUrl: null, message: "No PDF found" });
+  // get latest uploaded pdf
+  const doc = await Document.findOne().sort({ createdAt: -1 });
+
+  if (!doc) {
+    return NextResponse.json({
+      fileUrl: null,
+      message: "No PDF found",
+    });
   }
 
-  return NextResponse.json({ fileUrl: agreement.fileUrl });
+  return NextResponse.json({
+    fileUrl: doc.secureUrl,
+  });
 }
+
+
+
+// import { NextResponse } from "next/server";
+// import connectDB from "@/app/lib/db";
+// import Agreement from "@/app/lib/models/Agreement";
+
+// export async function GET() {
+//   await connectDB();
+//   const agreement = await Agreement.findOne().sort({ createdAt: -1 });
+
+//   if (!agreement) {
+//     return NextResponse.json({ fileUrl: null });
+//   }
+
+//   return NextResponse.json({ fileUrl: agreement.fileUrl });
+// }

@@ -1,60 +1,164 @@
+// ========== FIXED API ROUTE: /api/sign/stamp ==========
 import { NextResponse } from "next/server";
-import { PDFDocument, rgb } from "pdf-lib";
-import { verifyToken } from "@/app/lib/jwt";
-import cloudinary from "@/app/lib/cloudinary";
+import { PDFDocument } from "pdf-lib";
+import { uploadToCloudinary } from "@/app/lib/cloudinary";
+
+async function fetchBuffer(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.error("Fetch error:", error);
+    throw error;
+  }
+}
+
+function parseDataUrl(dataUrl) {
+  const match = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+  if (!match) throw new Error("Invalid data URL format");
+  const mime = match[1] || "image/png";
+  const buffer = Buffer.from(match[2], "base64");
+  return { mime, buffer };
+}
 
 export async function POST(req) {
   try {
-    const token = req.cookies.get("token")?.value;
-    if (!token) return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
-
-    const user = verifyToken(token);
-
     const { pdfUrl, signatureUrl } = await req.json();
+
+    // Validation
     if (!pdfUrl || !signatureUrl) {
-      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "pdfUrl and signatureUrl are required" },
+        { status: 400 }
+      );
     }
 
-    // load PDF
-    const pdfBytes = await fetch(pdfUrl).then(r => r.arrayBuffer());
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-
-    // load signature
-    const sigBytes = await fetch(signatureUrl).then(r => r.arrayBuffer());
-    const sigImg = await pdfDoc.embedPng(sigBytes);
-
-    const pages = pdfDoc.getPages();
-    const last = pages[pages.length - 1];
-    const { width } = last.getSize();
-
-    const sigWidth = 180;
-    const sigHeight = 60;
-    last.drawImage(sigImg, {
-      x: width - sigWidth - 50,
-      y: 60,
-      width: sigWidth,
-      height: sigHeight,
+    console.log("Processing signature stamp...", {
+      pdfUrl: pdfUrl.substring(0, 50) + "...",
+      signatureUrl: signatureUrl.substring(0, 50) + "...",
     });
 
-    last.drawText(`Signed: ${new Date().toLocaleDateString()}`, {
-      x: width - 200,
-      y: 130,
-      size: 10,
-      color: rgb(0,0,0),
+    // Fetch source PDF
+    const sourcePdfBuffer = await fetchBuffer(pdfUrl);
+
+    // Resolve signature bytes
+    let sigBuffer;
+    let sigMime = "image/png";
+
+    if (signatureUrl.startsWith("data:")) {
+      const parsed = parseDataUrl(signatureUrl);
+      sigBuffer = parsed.buffer;
+      sigMime = parsed.mime;
+    } else {
+      sigBuffer = await fetchBuffer(signatureUrl);
+      // Try to detect MIME type from URL or default to PNG
+      sigMime = signatureUrl.includes("jpg") || signatureUrl.includes("jpeg")
+        ? "image/jpeg"
+        : "image/png";
+    }
+
+    console.log("Signature details:", {
+      bufferSize: sigBuffer.length,
+      mimeType: sigMime,
     });
 
-    const signedBytes = await pdfDoc.save();
-    const base64 = Buffer.from(signedBytes).toString("base64");
+    // Load PDF and embed signature
+    const pdfDoc = await PDFDocument.load(sourcePdfBuffer);
+    let sigImage;
 
-    const upload = await cloudinary.uploader.upload(
-      `data:application/pdf;base64,${base64}`,
-      { folder: "signed-pdfs", resource_type: "raw" }
+    if (sigMime.includes("jpeg") || sigMime.includes("jpg")) {
+      sigImage = await pdfDoc.embedJpg(sigBuffer);
+    } else {
+      sigImage = await pdfDoc.embedPng(sigBuffer);
+    }
+
+    // Get last page for signature placement
+    const pageCount = pdfDoc.getPageCount();
+    const page = pdfDoc.getPage(pageCount - 1);
+    const pageWidth = page.getWidth();
+    const pageHeight = page.getHeight();
+
+    // Scale signature to ~28% page width, keep aspect ratio
+    const targetWidth = pageWidth * 0.28;
+    const scale = targetWidth / sigImage.width;
+    const targetHeight = sigImage.height * scale;
+
+    const margin = 40;
+    const x = pageWidth - targetWidth - margin;
+    const y = margin;
+
+    console.log("Signature placement:", {
+      x,
+      y,
+      width: targetWidth,
+      height: targetHeight,
+      pageWidth,
+      pageHeight,
+    });
+
+    page.drawImage(sigImage, {
+      x,
+      y,
+      width: targetWidth,
+      height: targetHeight,
+    });
+
+    // Save PDF as bytes
+    const signedPdfBytes = await pdfDoc.save();
+    const pdfBuffer = Buffer.from(signedPdfBytes);
+
+    console.log("Signed PDF size:", pdfBuffer.length, "bytes");
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const filename = `signed-agreement-${timestamp}.pdf`;
+
+    // Upload to Cloudinary
+    const upload = await uploadToCloudinary(
+      pdfBuffer,
+      filename,
+      "trademilaan/signed-agreements"
     );
 
-    return NextResponse.json({ signedPdfUrl: upload.secure_url });
+    console.log("PDF Uploaded to Cloudinary:", {
+      publicId: upload.publicId,
+      url: upload.secureUrl,
+      format: upload.format,
+      resourceType: upload.resourceType,
+    });
 
+    // CRITICAL FIX: Return proper URL for PDF download
+    const downloadUrl = upload.secureUrl || upload.url;
+
+    return NextResponse.json(
+      {
+        success: true,
+        signedPdfUrl: downloadUrl,
+        publicId: upload.publicId,
+        filename: filename,
+      },
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Stamp Failed" }, { status: 500 });
+    console.error("Stamp error:", {
+      message: err.message,
+      stack: err.stack,
+    });
+
+    return NextResponse.json(
+      {
+        error: "Failed to stamp signature",
+        detail: err.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }

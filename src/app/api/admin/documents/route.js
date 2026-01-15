@@ -10,10 +10,8 @@ import { uploadToCloudinary, deleteFromCloudinary } from "@/app/lib/cloudinary";
 async function requireAdmin() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
-  
-  if (!token) {
-    throw new Error("Unauthorized");
-  }
+
+  if (!token) throw new Error("Unauthorized");
 
   let decoded;
   try {
@@ -40,18 +38,18 @@ function formatFileSize(bytes) {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
 }
 
-// GET - List all documents
-export async function GET(request) {
+// ================= GET ===================
+export async function GET() {
   try {
     await requireAdmin();
     await connectDB();
 
     const documents = await Document.find()
-      .select("filename size secureUrl cloudinaryPublicId createdAt _id")
+      .select("filename size secureUrl cloudinaryPublicId cloudinaryUrl createdAt _id")
       .sort({ createdAt: -1 })
       .lean();
 
-    const formattedDocuments = documents.map((doc) => ({
+    const formatted = documents.map((doc) => ({
       id: doc._id.toString(),
       filename: doc.filename,
       url: doc.secureUrl,
@@ -59,18 +57,16 @@ export async function GET(request) {
       uploadedAt: doc.createdAt,
     }));
 
-    return NextResponse.json({ documents: formattedDocuments });
+    return NextResponse.json({ documents: formatted });
   } catch (error) {
     return NextResponse.json(
-      { message: error.message || "Failed to fetch documents" },
-      { status: error.message === "Unauthorized" || error.message === "Invalid token" || error.message === "Admin access required" ? 403 : 500 }
+      { message: error.message },
+      { status: 500 }
     );
   }
 }
 
-// POST - Upload a document
-
-
+// ================= POST ===================
 export async function POST(request) {
   try {
     const user = await requireAdmin();
@@ -89,14 +85,13 @@ export async function POST(request) {
     const document = await Document.create({
       filename: safeName,
       contentType: file.type,
-      cloudinaryUrl: cloudinaryResult.url,
+      cloudinaryUrl: cloudinaryResult.downloadUrl,   // FIXED
       cloudinaryPublicId: cloudinaryResult.publicId,
       secureUrl: cloudinaryResult.secureUrl,
       size: cloudinaryResult.bytes,
       uploadedBy: user._id,
     });
 
-    // ⬇️ ADD THIS LINE
     await Agreement.create({ fileUrl: cloudinaryResult.secureUrl });
 
     return NextResponse.json({
@@ -104,15 +99,18 @@ export async function POST(request) {
       filename: document.filename,
       id: document._id,
       url: document.secureUrl,
+      download: document.cloudinaryUrl,
     });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ message: "Failed to upload file" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Failed to upload file" },
+      { status: 500 }
+    );
   }
 }
 
-
-// DELETE - Remove a document
+// ================= DELETE ===================
 export async function DELETE(request) {
   try {
     await requireAdmin();
@@ -125,29 +123,24 @@ export async function DELETE(request) {
       return NextResponse.json({ message: "Document ID is required" }, { status: 400 });
     }
 
-    const document = await Document.findById(id);
-
-    if (!document) {
+    const doc = await Document.findById(id);
+    if (!doc) {
       return NextResponse.json({ message: "Document not found" }, { status: 404 });
     }
 
-    // Delete from Cloudinary
     try {
-      await deleteFromCloudinary(document.cloudinaryPublicId);
+      await deleteFromCloudinary(doc.cloudinaryPublicId);
     } catch (cloudError) {
       console.error("Cloudinary deletion error:", cloudError);
-      // Continue with database deletion even if Cloudinary deletion fails
     }
 
-    // Delete from database
     await Document.findByIdAndDelete(id);
 
     return NextResponse.json({ message: "Document deleted successfully" });
   } catch (error) {
-    console.error("Delete error:", error);
     return NextResponse.json(
-      { message: error.message || "Failed to delete document" },
-      { status: error.message === "Unauthorized" || error.message === "Invalid token" || error.message === "Admin access required" ? 403 : 500 }
+      { message: error.message },
+      { status: 500 }
     );
   }
 }

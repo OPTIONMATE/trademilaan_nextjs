@@ -14,45 +14,41 @@ export async function uploadToCloudinary(
   folder = "trademilaan/documents"
 ) {
   return new Promise((resolve, reject) => {
-    const baseName = filename.replace(/\.[^/.]+$/, "");
-    const publicId = `${folder}/${baseName}`;
+    const baseName = filename.replace(/\.[^/.]+$/, ""); // remove extension
 
-    const uploadStream = cloudinary.uploader.upload_stream(
+    cloudinary.uploader.upload_stream(
       {
-        resource_type: "raw",
-        public_id: publicId,
+        folder,
+        public_id: baseName,
+        resource_type: "image", // IMPORTANT
+        format: "pdf",          // FORCE PDF FORMAT
+        type: "upload",
         overwrite: true,
-        unique_filename: false,
         use_filename: true,
+        unique_filename: false,
       },
       (error, result) => {
         if (error) {
-          console.error("Cloudinary RAW upload error:", error);
+          console.error("Cloudinary PDF upload error:", error);
           return reject(error);
         }
 
-        const cloud = process.env.CLOUDINARY_CLOUD_NAME;
-
-       const downloadUrl = `https://res.cloudinary.com/${cloud}/raw/upload/fl_attachment/${baseName}.pdf/${result.public_id}.pdf`;
-
-
         resolve({
           publicId: result.public_id,
-          secureUrl: result.secure_url,
-          downloadUrl,
-          bytes: result.bytes,
+          url: result.secure_url,       // viewable in browser
+          format: result.format,        // should be "pdf"
+          resourceType: result.resource_type, // should be "image"
         });
       }
-    );
-
-    uploadStream.end(fileBuffer);
+    ).end(fileBuffer);
   });
 }
 
 export async function deleteFromCloudinary(publicId) {
   try {
+    // delete as image not raw
     const result = await cloudinary.uploader.destroy(publicId, {
-      resource_type: "raw",
+      resource_type: "image",
       invalidate: true,
     });
 

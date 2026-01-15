@@ -1,33 +1,36 @@
-// ========== FIXED API ROUTE: /api/sign/stamp ==========
+// ========== FIXED & ENHANCED API ROUTE: /api/sign/stamp ==========
 import { NextResponse } from "next/server";
 import { PDFDocument } from "pdf-lib";
-import { uploadToCloudinary } from "@/app/lib/cloudinary";
+import cloudinary from "cloudinary";
 
+// IMPORTANT: Cloudinary config (ensure these are set in env)
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Fetch any URL as buffer
 async function fetchBuffer(url) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw error;
-  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch URL (${res.status}): ${url}`);
+  return Buffer.from(await res.arrayBuffer());
 }
 
+// Convert data URL → buffer + mime
 function parseDataUrl(dataUrl) {
   const match = dataUrl.match(/^data:(.*?);base64,(.*)$/);
   if (!match) throw new Error("Invalid data URL format");
-  const mime = match[1] || "image/png";
-  const buffer = Buffer.from(match[2], "base64");
-  return { mime, buffer };
+  return {
+    mime: match[1],
+    buffer: Buffer.from(match[2], "base64")
+  };
 }
 
 export async function POST(req) {
   try {
     const { pdfUrl, signatureUrl } = await req.json();
 
-    // Validation
     if (!pdfUrl || !signatureUrl) {
       return NextResponse.json(
         { error: "pdfUrl and signatureUrl are required" },
@@ -35,17 +38,13 @@ export async function POST(req) {
       );
     }
 
-    console.log("Processing signature stamp...", {
-      pdfUrl: pdfUrl.substring(0, 50) + "...",
-      signatureUrl: signatureUrl.substring(0, 50) + "...",
-    });
+    console.log(">>> Starting Stamp Workflow");
 
-    // Fetch source PDF
-    const sourcePdfBuffer = await fetchBuffer(pdfUrl);
+    // 1. Load PDF buffer
+    const pdfBuffer = await fetchBuffer(pdfUrl);
 
-    // Resolve signature bytes
-    let sigBuffer;
-    let sigMime = "image/png";
+    // 2. Resolve signature buffer
+    let sigBuffer, sigMime;
 
     if (signatureUrl.startsWith("data:")) {
       const parsed = parseDataUrl(signatureUrl);
@@ -53,19 +52,15 @@ export async function POST(req) {
       sigMime = parsed.mime;
     } else {
       sigBuffer = await fetchBuffer(signatureUrl);
-      // Try to detect MIME type from URL or default to PNG
-      sigMime = signatureUrl.includes("jpg") || signatureUrl.includes("jpeg")
+      sigMime = signatureUrl.includes(".jpg") || signatureUrl.includes(".jpeg")
         ? "image/jpeg"
         : "image/png";
     }
 
-    console.log("Signature details:", {
-      bufferSize: sigBuffer.length,
-      mimeType: sigMime,
-    });
+    console.log("Signature MIME:", sigMime);
 
-    // Load PDF and embed signature
-    const pdfDoc = await PDFDocument.load(sourcePdfBuffer);
+    // 3. Embed signature into PDF
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
     let sigImage;
 
     if (sigMime.includes("jpeg") || sigMime.includes("jpg")) {
@@ -74,89 +69,73 @@ export async function POST(req) {
       sigImage = await pdfDoc.embedPng(sigBuffer);
     }
 
-    // Get last page for signature placement
-    const pageCount = pdfDoc.getPageCount();
-    const page = pdfDoc.getPage(pageCount - 1);
+    const page = pdfDoc.getPage(pdfDoc.getPageCount() - 1);
     const pageWidth = page.getWidth();
     const pageHeight = page.getHeight();
 
-    // Scale signature to ~28% page width, keep aspect ratio
-    const targetWidth = pageWidth * 0.28;
-    const scale = targetWidth / sigImage.width;
-    const targetHeight = sigImage.height * scale;
+    // Scale signature
+    const width = pageWidth * 0.28;
+    const scale = width / sigImage.width;
+    const height = sigImage.height * scale;
 
-    const margin = 40;
-    const x = pageWidth - targetWidth - margin;
-    const y = margin;
-
-    console.log("Signature placement:", {
-      x,
-      y,
-      width: targetWidth,
-      height: targetHeight,
-      pageWidth,
-      pageHeight,
-    });
-
+    // Place bottom-right margin
     page.drawImage(sigImage, {
-      x,
-      y,
-      width: targetWidth,
-      height: targetHeight,
+      x: pageWidth - width - 40,
+      y: 40,
+      width,
+      height,
     });
 
-    // Save PDF as bytes
-    const signedPdfBytes = await pdfDoc.save();
-    const pdfBuffer = Buffer.from(signedPdfBytes);
+    // 4. Save signed PDF
+    const stampedBytes = await pdfDoc.save();
+    const stampedBuffer = Buffer.from(stampedBytes);
+    const filename = `signed-agreement-${Date.now()}.pdf`;
 
-    console.log("Signed PDF size:", pdfBuffer.length, "bytes");
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const filename = `signed-agreement-${timestamp}.pdf`;
-
-    // Upload to Cloudinary
-    const upload = await uploadToCloudinary(
-      pdfBuffer,
-      filename,
-      "trademilaan/signed-agreements"
-    );
-
-    console.log("PDF Uploaded to Cloudinary:", {
-      publicId: upload.publicId,
-      url: upload.secureUrl,
-      format: upload.format,
-      resourceType: upload.resourceType,
+    // 5. Upload to Cloudinary as RAW PDF (THIS IS THE KEY FIX)
+    const upload = await new Promise((resolve, reject) => {
+      const stream = cloudinary.v2.uploader.upload_stream(
+        {
+          folder: "trademilaan/signed-agreements",
+          resource_type: "raw",       // supports PDF
+          format: "pdf",
+          use_filename: true,
+          unique_filename: false,
+          filename_override: filename
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+      stream.end(stampedBuffer);
     });
 
-    // CRITICAL FIX: Return proper URL for PDF download
-    const downloadUrl = upload.secureUrl || upload.url;
+    console.log("Cloudinary Upload:", {
+      public_id: upload.public_id,
+      secure_url: upload.secure_url
+    });
 
+    const finalPdfUrl = upload.secure_url + "#toolbar=1&navpanes=0&scrollbar=1";
+
+    // 6. Response
     return NextResponse.json(
       {
         success: true,
-        signedPdfUrl: downloadUrl,
-        publicId: upload.publicId,
-        filename: filename,
+        signedPdfUrl: finalPdfUrl,
+        filename,
+        publicId: upload.public_id
       },
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { status: 200 }
     );
+
   } catch (err) {
-    console.error("Stamp error:", {
-      message: err.message,
-      stack: err.stack,
-    });
+    console.error("STAMP ERROR:", err);
 
     return NextResponse.json(
       {
         error: "Failed to stamp signature",
         detail: err.message,
-        timestamp: new Date().toISOString(),
+        at: new Date().toISOString()
       },
       { status: 500 }
     );

@@ -19,24 +19,25 @@ export default function AdminDashboardPage() {
     }
   }, [user, loading, router]);
 
-  // Fetch agreements on load
+  // Fetch agreements on mount
   useEffect(() => {
     fetchAgreements();
   }, []);
 
- const fetchAgreements = async () => {
-  try {
-    const res = await fetch("/api/admin/agreement/list");
+  const fetchAgreements = async () => {
+    setLoadingDocs(true);
+    try {
+      const res = await fetch("/api/admin/agreement");
+      if (!res.ok) throw new Error("Failed fetch");
 
-    if (!res.ok) throw new Error("Failed fetch");
-
-    const data = await res.json();
-    setAgreements(data.agreements);
-  } catch (err) {
-    console.error("Failed to fetch agreements:", err);
-  }
-};
-
+      const data = await res.json();
+      setAgreements(data.agreements || []);
+    } catch (err) {
+      console.error("Failed to fetch agreements:", err);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -53,13 +54,12 @@ export default function AdminDashboardPage() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("/api/admin/agreement/upload", {
+      const res = await fetch("/api/admin/agreement", {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
-
       if (res.ok) {
         alert("Agreement uploaded successfully!");
         await fetchAgreements();
@@ -90,17 +90,13 @@ export default function AdminDashboardPage() {
 
         {/* Upload Agreement */}
         <div className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-neutral-900">User Agreement Versions</h2>
-              <p className="text-sm text-neutral-600 mt-1">
-                Upload new agreement versions. Latest version will be shown to users.
-              </p>
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold text-neutral-900">User Agreement Versions</h2>
+          <p className="text-sm text-neutral-600 mt-1">
+            Upload new agreement versions. Latest version will be shown to users.
+          </p>
 
           {/* Upload Box */}
-          <div className="relative">
+          <div className="relative mt-4">
             <input
               type="file"
               accept=".pdf"
@@ -111,25 +107,10 @@ export default function AdminDashboardPage() {
             />
             <label
               htmlFor="agreement-upload"
-              className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition cursor-pointer ${
-                uploading
-                  ? "border-neutral-300 bg-neutral-50"
-                  : "border-lime-300 bg-lime-50/50 hover:bg-lime-50 hover:border-lime-400"
+              className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 cursor-pointer transition ${
+                uploading ? "border-neutral-300 bg-neutral-50" : "border-lime-300 bg-lime-50/50 hover:bg-lime-50 hover:border-lime-400"
               }`}
             >
-              <svg
-                className={`w-12 h-12 mb-3 ${uploading ? "text-neutral-400" : "text-lime-600"}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
               <p className="text-sm font-semibold text-neutral-900 mb-1">
                 {uploading ? "Uploading..." : "Click to upload agreement PDF"}
               </p>
@@ -139,6 +120,7 @@ export default function AdminDashboardPage() {
           {/* Agreements List */}
           <div className="mt-6">
             <h3 className="text-sm font-semibold text-neutral-700 mb-3">Previous Versions</h3>
+
             {loadingDocs ? (
               <p className="text-sm text-neutral-500">Loading...</p>
             ) : agreements.length === 0 ? (
@@ -150,7 +132,7 @@ export default function AdminDashboardPage() {
                 {agreements.map((ag) => (
                   <div
                     key={ag._id}
-                    className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-4 hover:shadow-sm transition"
+                    className="flex items-center justify-between rounded-lg border p-4 bg-white hover:shadow-sm transition"
                   >
                     <div>
                       <p className="font-semibold text-neutral-900">

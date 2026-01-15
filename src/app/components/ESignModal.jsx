@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-// import SignaturePad from "react-signature-canvas";
-
-
 import dynamic from "next/dynamic";
 
 const SignaturePad = dynamic(() => import("react-signature-canvas"), {
@@ -71,7 +68,6 @@ export default function ESignModal({ onClose, onSaved, pdfUrl }) {
     }
 
     onSaved(data.signedPdfUrl);
-    onClose();
   };
 
   return (
@@ -86,9 +82,7 @@ export default function ESignModal({ onClose, onSaved, pdfUrl }) {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-5 py-2 text-sm font-semibold uppercase tracking-wide transition ${
-                  tab === t
-                    ? "bg-purple-600 text-white"
-                    : "bg-white text-slate-700 hover:bg-slate-50"
+                  tab === t ? "bg-purple-600 text-white" : "bg-white text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 {t}
@@ -107,7 +101,10 @@ export default function ESignModal({ onClose, onSaved, pdfUrl }) {
             )}
 
             {tab === "draw" && (
-              <SignaturePad ref={sigCanvas} canvasProps={{ className: "border border-slate-300 rounded-lg w-full h-48" }} />
+              <SignaturePad
+                ref={sigCanvas}
+                canvasProps={{ className: "border border-slate-300 rounded-lg w-full h-48" }}
+              />
             )}
 
             {tab === "upload" && (
@@ -127,12 +124,13 @@ export default function ESignModal({ onClose, onSaved, pdfUrl }) {
             >
               Cancel
             </button>
+
             <button
               onClick={save}
+              disabled={saving}
               className={`px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 ${
                 saving ? "opacity-80 cursor-not-allowed" : ""
               }`}
-              disabled={saving}
             >
               {saving ? "Stamping..." : "Insert"}
             </button>

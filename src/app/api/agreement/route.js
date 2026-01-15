@@ -1,38 +1,31 @@
+// app/api/agreement/route.js
+
 import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
 import Document from "@/app/lib/models/Document";
 
 export async function GET() {
-  await connectDB();
+  try {
+    await connectDB();
 
-  // get latest uploaded pdf
-  const doc = await Document.findOne().sort({ createdAt: -1 });
+    const doc = await Document.findOne().sort({ createdAt: -1 });
 
-  if (!doc) {
+    if (!doc) {
+      return NextResponse.json({
+        fileUrl: null,
+        message: "No PDF found",
+      });
+    }
+
+    return NextResponse.json({
+      fileUrl: doc.secureUrl,
+    });
+
+  } catch (err) {
+    console.error("AGREEMENT FETCH ERROR:", err);
     return NextResponse.json({
       fileUrl: null,
-      message: "No PDF found",
-    });
+      message: "Server Error",
+    }, { status: 500 });
   }
-
-  return NextResponse.json({
-    fileUrl: doc.secureUrl,
-  });
 }
-
-
-
-// import { NextResponse } from "next/server";
-// import connectDB from "@/app/lib/db";
-// import Agreement from "@/app/lib/models/Agreement";
-
-// export async function GET() {
-//   await connectDB();
-//   const agreement = await Agreement.findOne().sort({ createdAt: -1 });
-
-//   if (!agreement) {
-//     return NextResponse.json({ fileUrl: null });
-//   }
-
-//   return NextResponse.json({ fileUrl: agreement.fileUrl });
-// }

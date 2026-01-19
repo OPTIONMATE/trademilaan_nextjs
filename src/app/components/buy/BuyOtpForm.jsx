@@ -1,12 +1,10 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
-export default function BuyOtpForm() {
+export default function BuyOtpForm({ onSuccess }) {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const verify = async () => {
     setError("");
@@ -27,8 +25,8 @@ export default function BuyOtpForm() {
       return;
     }
 
-    // 👇 redirect to agreement page here
-    router.push("/agreement");
+    // Move to next step (agreement) in the modal
+    onSuccess();
   };
 
   return (

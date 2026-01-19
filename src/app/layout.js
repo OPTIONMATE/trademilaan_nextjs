@@ -8,6 +8,8 @@ import { CursorTrailer } from "./components/CursorTrailer";
 import { AuthProvider} from "./context/AuthContext";
 import AppFrame from "./components/AppFrame";
 
+
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

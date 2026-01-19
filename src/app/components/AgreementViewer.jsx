@@ -1,39 +1,19 @@
 "use client";
 
-import { Document, Page, pdfjs } from "react-pdf";
-import { useEffect, useState, useRef } from "react";
+import { Viewer, Worker } from "@react-pdf-viewer/core";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 
-// Worker file required for pdfjs
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
-export default function AgreementViewer({ fileUrl, onScrollEnd }) {
-  const viewerRef = useRef(null);
-  const [numPages, setNumPages] = useState(null);
-
-  function onDocumentLoadSuccess({ numPages }) {
-    setNumPages(numPages);
-  }
-
-  const handleScroll = () => {
-    const el = viewerRef.current;
-    if (!el) return;
-
-    if (el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
-      onScrollEnd();
-    }
-  };
+export default function AgreementViewer({ fileUrl }) {
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   return (
-    <div
-      ref={viewerRef}
-      onScroll={handleScroll}
-      style={{ height: "80vh", overflowY: "auto", border: "1px solid #ccc" }}
-    >
-      <Document file={fileUrl} onLoadSuccess={onDocumentLoadSuccess}>
-        {Array.from({ length: numPages }, (_, i) => (
-          <Page key={i} pageNumber={i + 1} />
-        ))}
-      </Document>
+    <div style={{ height: "80vh", border: "1px solid #ccc", borderRadius: 6 }}>
+      <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>
+        <Viewer fileUrl={fileUrl} plugins={[defaultLayoutPluginInstance]} />
+      </Worker>
     </div>
   );
 }

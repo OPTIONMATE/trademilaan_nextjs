@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  reactStrictMode: true,
+  turbopack: {}, // Explicitly enable Turbopack
 };
 
 export default nextConfig;

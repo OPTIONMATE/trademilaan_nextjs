@@ -25,6 +25,50 @@ export async function generateCompleteAgreementPDF(agreementData) {
     );
     const signatureData = agreementData.signatureData || "";
 
+    // --- PLAN DATES LOGIC ---
+    // agreementData.planType (e.g. 'monthly'), agreementData.planDuration (days), agreementData.planStartDate (ISO or Date)
+    let planType = agreementData.planType || "monthly";
+    let planDuration = agreementData.planDuration;
+    // If not provided, fallback to common durations
+    if (!planDuration) {
+      switch (planType) {
+        case "weekly":
+          planDuration = 7;
+          break;
+        case "monthly":
+          planDuration = 30;
+          break;
+        case "quarterly":
+          planDuration = 90;
+          break;
+        case "halfYearly":
+          planDuration = 182;
+          break;
+        case "yearly":
+          planDuration = 365;
+          break;
+        default:
+          planDuration = 30;
+      }
+    }
+    let planStartDate = agreementData.planStartDate
+      ? new Date(agreementData.planStartDate)
+      : new Date();
+    let planEndDate = agreementData.planEndDate
+      ? new Date(agreementData.planEndDate)
+      : new Date(planStartDate.getTime() + planDuration * 24 * 60 * 60 * 1000);
+    if (Number.isNaN(planEndDate.getTime())) {
+      planEndDate = new Date(
+        planStartDate.getTime() + planDuration * 24 * 60 * 60 * 1000,
+      );
+    }
+    // Format as DD/MM/YYYY
+    function formatDate(d) {
+      return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    }
+    const agreementStartDateDisplay = formatDate(planStartDate);
+    const agreementEndDateDisplay = formatDate(planEndDate);
+
     const raName = "Sasikumar Peyyala"; // agreementData.raName || "RA NAME";
 
     let raNumber = "INH000019327";
@@ -222,6 +266,16 @@ export async function generateCompleteAgreementPDF(agreementData) {
       yPosition -= amount;
       if (yPosition < margin + 20) addNewPage();
     };
+
+    // --- AGREEMENT PERIOD SECTION ---
+    drawSectionHeading("Service Agreement Period", 16, true);
+    drawWrappedText(
+      `This agreement is valid for the selected plan period.`,
+      11,
+    );
+    drawWrappedText(`Start Date: ${agreementStartDateDisplay}`, 11);
+    drawWrappedText(`End Date: ${agreementEndDateDisplay}`, 11);
+    addSpace(10);
 
     drawSectionHeading("Terms of Service(TOS) or Client Consent", 18, true);
 

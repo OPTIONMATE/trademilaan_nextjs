@@ -5,6 +5,7 @@ import { generateInvoicePDF } from "@/app/lib/generateInvoicePDF";
 import { sendInvoicePDFMail } from "@/app/lib/mailer";
 import Payment from "@/app/lib/models/Payment";
 import Coupon from "@/app/lib/models/Coupon";
+import Plan from "@/app/lib/models/Plan";
 import { verifyToken } from "@/app/lib/jwt";
 import { cookies } from "next/headers";
 import { createPerIpRateLimiter } from "@/app/lib/rateLimiter";
@@ -199,10 +200,26 @@ export async function POST(request) {
       );
     }
 
-    // Set paidAt to now, expiresAt to one month later
+    const normalizedPlanType = String(orderPlanType || "").trim().toLowerCase();
+    const selectedPlan = await Plan.findById(orderPlanId).select("duration").lean();
+    const resolvedPlanDurationDays =
+      Number.isInteger(Number(selectedPlan?.duration)) &&
+      Number(selectedPlan.duration) > 0
+        ? Number(selectedPlan.duration)
+        : normalizedPlanType === "weekly"
+          ? 7
+          : normalizedPlanType === "quarterly"
+            ? 90
+            : normalizedPlanType === "halfyearly"
+              ? 182
+              : normalizedPlanType === "yearly"
+                ? 365
+                : 30;
+
+    // Set paidAt to now, expiresAt from selected plan duration
     const paidAt = new Date();
     const expiresAt = new Date(paidAt);
-    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    expiresAt.setDate(expiresAt.getDate() + resolvedPlanDurationDays);
 
     const payment = new Payment({
       razorpay_order_id,
@@ -286,10 +303,10 @@ export async function POST(request) {
 
     // Send invoice email to user
     await sendInvoicePDFMail({
-      to: email,
+      to: normalizedEmail,
       pdfBuffer: invoicePDFBuffer,
       clientName: name,
-      email,
+      email: normalizedEmail,
       phone,
       planName: orderPlanName,
       amount: safeAmount,

@@ -137,6 +137,9 @@ export default function AgreementModal({
         clientDob,
         clientState,
         signedPlanName: planData?.planName || planData?.name || "",
+        signedPlanId: String(planData?._id || planData?.id || ""),
+        signedPlanType: String(planData?.type || ""),
+        signedPlanDuration: Number(planData?.duration || 0) || undefined,
         signatureData: signedData.signatureUrl,
         signedName: signedData.signedName,
         signedTimestamp: signedData.signedTimestamp,
@@ -326,6 +329,14 @@ export default function AgreementModal({
                       clientDob={kycDob}
                       clientState={kycState}
                       clientGender={kycGender}
+                      planName={planData?.planName || planData?.name || ""}
+                      planType={planData?.type || "monthly"}
+                      planDuration={planData?.duration}
+                      planStartDate={
+                        signingData?.signedTimestamp
+                          ? new Date(signingData.signedTimestamp)
+                          : new Date()
+                      }
                       signedDate={
                         signingData?.signedTimestamp
                           ? new Date(
@@ -368,6 +379,10 @@ export default function AgreementModal({
                       clientDob={kycDob}
                       clientState={kycState}
                       clientGender={kycGender}
+                      planName={planData?.planName || planData?.name || ""}
+                      planType={planData?.type || "monthly"}
+                      planDuration={planData?.duration}
+                      planStartDate={new Date()}
                       signedDate={new Date().toLocaleDateString("en-IN")}
                     />
                     <div className="mt-2">

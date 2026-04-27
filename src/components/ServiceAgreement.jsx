@@ -25,7 +25,53 @@ export default function ServiceAgreement({
   clientDob = "",
   clientState = "",
   clientGender = "",
+  planType = "monthly",
+  planDuration,
+  planName = "",
+  planStartDate,
+  planEndDate,
 }) {
+  // Plan duration logic (same as PDF)
+  let duration = planDuration;
+  if (!duration && planName) {
+    const planNameLower = planName.toLowerCase();
+    if (planNameLower.includes("90") || planNameLower.includes("quarter"))
+      duration = 90;
+    else if (planNameLower.includes("180") || planNameLower.includes("half"))
+      duration = 180;
+    else if (planNameLower.includes("month")) duration = 30;
+    else if (planNameLower.includes("year")) duration = 365;
+  }
+  if (!duration) {
+    switch (planType) {
+      case "weekly":
+        duration = 7;
+        break;
+      case "monthly":
+        duration = 30;
+        break;
+      case "quarterly":
+        duration = 90;
+        break;
+      case "halfYearly":
+      case "halfyearly":
+      case "half-yearly":
+        duration = 180;
+        break;
+      case "yearly":
+        duration = 365;
+        break;
+      default:
+        duration = 30;
+    }
+  }
+  let startDate = planStartDate ? new Date(planStartDate) : new Date();
+  let endDate = planEndDate
+    ? new Date(planEndDate)
+    : new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
+  function formatDate(d) {
+    return d.toLocaleDateString("en-IN");
+  }
   const [showTOC, setShowTOC] = useState(false);
 
   const panDisplay = (clientPan || "").trim() || "—";
@@ -152,8 +198,8 @@ export default function ServiceAgreement({
                       Your details on this agreement
                     </h2>
                     <p className="mt-1 text-xs text-slate-600 max-w-xl">
-                      Pulled from the information you entered at checkout. Please
-                      verify before signing.
+                      Pulled from the information you entered at checkout.
+                      Please verify before signing.
                     </p>
                   </div>
                 </div>
@@ -163,6 +209,18 @@ export default function ServiceAgreement({
                   </p>
                   <p className="text-lg font-bold tabular-nums text-emerald-700">
                     {signedDate}
+                  </p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800/80 mt-2">
+                    Plan Duration
+                  </p>
+                  <p className="text-base font-bold tabular-nums text-emerald-700">
+                    {duration} days
+                  </p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800/80 mt-2">
+                    Service Period
+                  </p>
+                  <p className="text-base font-bold tabular-nums text-emerald-700">
+                    {formatDate(startDate)} to {formatDate(endDate)}
                   </p>
                 </div>
               </div>

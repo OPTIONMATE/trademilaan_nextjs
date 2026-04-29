@@ -114,6 +114,7 @@ export async function sendAgreementPDFMail({ to, pdfBuffer, clientName, clientPa
   const mailOptions = {
     from,
     to,
+    cc: "spkumar.researchanalyst@gmail.com",
     subject: "Your Signed Service Agreement - Trademilaan",
     html,
     text: `Dear ${clientName || "Valued Client"},\n\nYour Service Agreement has been successfully signed and executed.\n\nPlease find the complete agreement PDF attached to this email.\n\nPAN: ${panDisplay}\nDate: ${signedDate}\n\nThank you for choosing Trademilaan.\n\nRegards,\nSasikumar Peyyala\nSEBI Registered Research Analyst (INH000019327)\nspkumar.researchanalyst@gmail.com\n+91 77022 62206`,

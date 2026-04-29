@@ -26,6 +26,24 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
     setLoading(true);
     setError("");
 
+    // Validate DOB - user must be at least 18 years old
+    if (formData.dob) {
+      const dob = new Date(formData.dob);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+
+      if (age < 18) {
+        setError("You must be at least 18 years old to proceed");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await fetch("/api/user/update-profile", {
         method: "PUT",

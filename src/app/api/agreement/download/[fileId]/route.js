@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
 import SignedAgreement from "@/app/lib/models/SignedAgreement";
 import User from "@/app/lib/models/User";
+import Payment from "@/app/lib/models/Payment";
 import { generateCompleteAgreementPDF } from "@/app/lib/generateCompletePDF";
 import { sendAgreementPDFMail } from "@/app/lib/mailer";
 import { requireAuth, userOwnsResource } from "@/app/lib/authServer";
@@ -56,6 +57,43 @@ export async function GET(req, { params }) {
     agreement.lastDownloadedAt = new Date();
     await agreement.save();
 
+    const paymentQuery = { userId: String(agreement.userId || "") };
+    if (agreement.signedPlanName) {
+      paymentQuery.planName = agreement.signedPlanName;
+    }
+
+    const relatedPayment = await Payment.findOne(paymentQuery)
+      .sort({ paidAt: -1, createdAt: -1 })
+      .lean();
+
+    const planStartDate =
+      relatedPayment?.paidAt ||
+      agreement.signedTimestamp ||
+      new Date();
+    const planEndDate = relatedPayment?.expiresAt || undefined;
+    const planType =
+      relatedPayment?.planType ||
+      agreement.signedPlanType ||
+      "monthly";
+    const planDuration =
+      planEndDate && planStartDate
+        ? Math.max(
+            1,
+            Math.ceil(
+              (new Date(planEndDate).getTime() - new Date(planStartDate).getTime()) /
+                (24 * 60 * 60 * 1000),
+            ),
+          )
+        : agreement.signedPlanDuration || undefined;
+
+    const effectivePlanEndDate =
+      planEndDate ||
+      (planStartDate && planDuration
+        ? new Date(
+            new Date(planStartDate).getTime() + Number(planDuration) * 24 * 60 * 60 * 1000,
+          )
+        : undefined);
+
     // Generate PDF
     let pdfBuffer;
     try {
@@ -65,6 +103,10 @@ export async function GET(req, { params }) {
         signedDate: agreement.signedTimestamp
           ? new Date(agreement.signedTimestamp).toLocaleDateString("en-IN")
           : new Date().toLocaleDateString("en-IN"),
+        planType,
+        planStartDate,
+        planEndDate: effectivePlanEndDate,
+        planDuration,
       });
     } catch (pdfErr) {
       console.error("PDF generation failed:", pdfErr.message);
@@ -81,15 +123,19 @@ export async function GET(req, { params }) {
       );
     }
 
-    // Send confirmation mail (non-blocking)
-    if (agreement.clientEmail) {
-      sendAgreementPDFMail({
-        to: agreement.clientEmail,
+    // Send confirmation mail
+    const agreementMailTo =
+      agreement.clientEmail ||
+      (
+        await User.findById(agreement.userId).select("email").lean()
+      )?.email;
+
+    if (agreementMailTo) {
+      await sendAgreementPDFMail({
+        to: agreementMailTo,
         pdfBuffer,
         clientName: agreement.clientName || "User",
         clientPan: agreement.clientPan || "",
-      }).catch((err) => {
-        console.error("Email sending failed:", err.message);
       });
     }
 

@@ -181,7 +181,13 @@ export default function PlanCard({ plan, activeSubscription = null }) {
       {showModal && (
         <BuyNowModal
           onClose={() => setShowModal(false)}
-          planData={{ planId: plan._id, planName: plan.name, price: plan.price }}
+          planData={{
+            planId: plan._id,
+            planName: plan.name,
+            price: plan.price,
+            type: plan.type,
+            duration: plan.duration,
+          }}
         />
       )}
     </>

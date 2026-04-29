@@ -1,4 +1,3 @@
-// lib/models/SignedAgreement.js
 import mongoose from "mongoose";
 
 const signedAgreementSchema = new mongoose.Schema(
@@ -38,37 +37,58 @@ const signedAgreementSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
+
+    // Plan details at the time of signing
     signedPlanName: {
       type: String,
       required: false,
       default: null,
     },
+    signedPlanId: {
+      type: String,
+      required: false,
+      default: null,
+      index: true,
+    },
+    signedPlanType: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    signedPlanDuration: {
+      type: Number,
+      required: false,
+      default: null, // in days
+    },
+
     agreementHtml: {
       type: String,
       required: false,
       default: "",
     },
     signatureData: {
-      type: String, // Base64 encoded signature image
+      type: String,
       required: true,
     },
     signedName: {
-      type: String, // Name as signed
+      type: String,
+      default: null,
     },
     signedTimestamp: {
       type: Date,
       required: true,
     },
     signatureTab: {
-      type: String, // "typed", "draw", or "upload"
+      type: String,
       enum: ["typed", "draw", "upload"],
+      default: null,
     },
     ipAddress: {
       type: String,
       default: null,
     },
     fileHash: {
-      type: String, // SHA-256 hash of agreement + signature
+      type: String,
       required: true,
       unique: true,
     },
@@ -100,13 +120,11 @@ const signedAgreementSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
-// Prevent re-signing
 signedAgreementSchema.index({ userId: 1, status: 1 });
 
 export default mongoose.models.SignedAgreement ||
   mongoose.model("SignedAgreement", signedAgreementSchema);
+

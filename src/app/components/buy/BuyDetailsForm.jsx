@@ -8,6 +8,7 @@ export default function BuyDetailsForm({ onSuccess, planData }) {
     gender: "",
     state: "",
     email: "",
+    phone: "",
     panNumber: "",
   });
 
@@ -19,6 +20,8 @@ export default function BuyDetailsForm({ onSuccess, planData }) {
     const normalizedValue =
       name === "panNumber"
         ? value.toUpperCase().replace(/\s+/g, "").slice(0, 10)
+        : name === "phone"
+        ? value.replace(/\D/g, "").slice(0, 10)
         : value;
 
     setForm({ ...form, [name]: normalizedValue });
@@ -27,6 +30,41 @@ export default function BuyDetailsForm({ onSuccess, planData }) {
   const submit = async () => {
     setLoading(true);
     setError("");
+
+    // Validate DOB - user must be at least 18 years old
+    if (!form.dob) {
+      setError("Date of Birth is required");
+      setLoading(false);
+      return;
+    }
+
+    const dob = new Date(form.dob);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      setError("You must be at least 18 years old to proceed");
+      setLoading(false);
+      return;
+    }
+
+    // Validate phone presence and digits
+    if (!form.phone || String(form.phone).trim() === "") {
+      setError("Phone number is required");
+      setLoading(false);
+      return;
+    }
+
+    if (String(form.phone).replace(/\D/g, "").length < 10) {
+      setError("Phone number must be at least 10 digits");
+      setLoading(false);
+      return;
+    }
 
     const res = await fetch("/api/buy/start", {
       method: "POST",
@@ -131,6 +169,16 @@ export default function BuyDetailsForm({ onSuccess, planData }) {
         placeholder="Email"
         className="border p-2 w-full mb-3"
         onChange={update}
+      />
+
+      <input
+        name="phone"
+        type="tel"
+        placeholder="Phone Number (10 digits)"
+        className="border p-2 w-full mb-3"
+        onChange={update}
+        value={form.phone}
+        maxLength={10}
       />
 
       <input

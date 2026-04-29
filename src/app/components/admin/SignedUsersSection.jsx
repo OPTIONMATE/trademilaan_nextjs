@@ -58,6 +58,9 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("dateOfConsent");
   const [updatingUserId, setUpdatingUserId] = useState(null);
+  const [sendingAgreementId, setSendingAgreementId] = useState(null);
+  const [resultModal, setResultModal] = useState(null);
+  const [confirmSendModal, setConfirmSendModal] = useState(null);
   const [kycDialog, setKycDialog] = useState(null);
 
   useEffect(() => {
@@ -95,6 +98,39 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
       alert("Failed to update status. Please try again.");
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleConfirmedSend = async () => {
+    if (!confirmSendModal) return;
+    const agreementId = confirmSendModal.agreementId;
+    try {
+      setSendingAgreementId(agreementId);
+      const res = await fetch("/api/admin/signed-users/send-agreement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agreementId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || "Failed to send");
+      setLocalUsers((prev) =>
+        prev.map((row) =>
+          row._id === agreementId ? { ...row, agreementMailedToUser: true } : row
+        )
+      );
+      setResultModal({
+        type: "success",
+        message: `Agreement mailed successfully to ${confirmSendModal.email}`,
+      });
+    } catch (err) {
+      console.error("Send agreement failed:", err);
+      setResultModal({
+        type: "error",
+        message: `Failed to send agreement: ${err.message}`,
+      });
+    } finally {
+      setSendingAgreementId(null);
+      setConfirmSendModal(null);
     }
   };
 
@@ -342,6 +378,17 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
                   {StatusBadge({ value: u?.invoiceMailedToUser })}
                 </div>
               </div>
+              <div className="mt-3">
+                <button
+                  disabled={sendingAgreementId === u._id}
+                  onClick={async () => {
+                    setConfirmSendModal({ agreementId: u._id, email: u.email, name: u.name });
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg font-medium ${sendingAgreementId === u._id ? "bg-gray-300 text-gray-700" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                >
+                  {sendingAgreementId === u._id ? "Sending..." : "Send Agreement"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -395,6 +442,9 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
                 </th>
                 <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
                   Invoice Mailed
+                </th>
+                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
+                  Send Agreement
                 </th>
               </tr>
             </thead>
@@ -462,6 +512,17 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
                   <td className="px-3 py-2.5">
                     {StatusBadge({ value: u?.invoiceMailedToUser })}
                   </td>
+                  <td className="px-3 py-2.5 text-sm whitespace-nowrap">
+                    <button
+                      disabled={sendingAgreementId === u._id}
+                      onClick={async () => {
+                        setConfirmSendModal({ agreementId: u._id, email: u.email, name: u.name });
+                      }}
+                      className={`px-3 py-1 rounded-lg font-medium ${sendingAgreementId === u._id ? "bg-gray-300 text-gray-700" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                    >
+                      {sendingAgreementId === u._id ? "Sending..." : "Send"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -521,6 +582,67 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
                 className="rounded-lg border border-neutral-200 px-3 py-2 text-sm text-black/75 hover:bg-neutral-50"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              {resultModal.type === "success" ? (
+                <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-emerald-100">
+                  <Check className="h-6 w-6 text-emerald-600" />
+                </div>
+              ) : (
+                <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100">
+                  <X className="h-6 w-6 text-red-600" />
+                </div>
+              )}
+              <h3 className={`text-base font-semibold ${resultModal.type === "success" ? "text-emerald-900" : "text-red-900"}`}>
+                {resultModal.type === "success" ? "Success" : "Error"}
+              </h3>
+            </div>
+            <p className={`text-sm ${resultModal.type === "success" ? "text-emerald-700" : "text-red-700"}`}>
+              {resultModal.message}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setResultModal(null)}
+                className={`px-4 py-2 rounded-lg font-medium text-white transition ${resultModal.type === "success" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmSendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-black/90 mb-2">Send Agreement Email</h3>
+            <p className="text-sm text-black/65 mb-4">
+              Are you sure you want to send the agreement to <span className="font-medium">{confirmSendModal.email}</span>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmSendModal(null)}
+                className="px-4 py-2 rounded-lg border border-neutral-200 text-black/75 font-medium hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmedSend}
+                disabled={sendingAgreementId === confirmSendModal.agreementId}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {sendingAgreementId === confirmSendModal.agreementId ? "Sending..." : "Send"}
               </button>
             </div>
           </div>

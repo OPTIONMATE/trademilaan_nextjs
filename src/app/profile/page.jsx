@@ -12,6 +12,11 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Determine if user has missing critical fields
+  const requiredFields = ["fullName", "email", "phone", "panNumber", "dob", "gender", "state"];
+  const missingFields = requiredFields.filter((f) => !user?.[f]);
+  const needsProfileCompletion = missingFields.length > 0;
+
   // Navigation handlers
   const goToRiskAssessment = () => router.push("/risk-assessment");
 
@@ -99,6 +104,21 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {needsProfileCompletion && (
+            <div className="mt-6 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                Some profile details are missing: <strong>{missingFields.join(", ")}</strong>. Please complete your profile to continue.
+              </p>
+              <div className="mt-3">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            </div>
+          )}
           {/* Edit Profile Button */}
           <div className="mt-8">
             <button

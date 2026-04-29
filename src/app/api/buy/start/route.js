@@ -3,17 +3,18 @@ import jwt from "jsonwebtoken";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { transporter } from "@/app/lib/mailer";
+import { isValidPhone } from "@/app/lib/validators";
 
 export async function POST(req) {
   try {
-    const { fullName, dob, gender, state, email, panNumber } = await req.json();
+    const { fullName, dob, gender, state, email, phone, panNumber } = await req.json();
     const normalizedPan = String(panNumber || "")
       .toUpperCase()
       .replace(/\s+/g, "")
       .trim();
 
     // 1. Basic validation
-    if (!fullName || !dob || !gender || !state || !email || !normalizedPan) {
+    if (!fullName || !dob || !gender || !state || !email || !phone || !normalizedPan) {
       return NextResponse.json(
         { message: "All fields are required" },
         { status: 400 },
@@ -54,6 +55,12 @@ export async function POST(req) {
     user.dob = dob;
     user.gender = gender;
     user.state = state;
+    // Normalize phone to digits only (keep country code handling minimal)
+    const normalizedPhone = String(phone || "").replace(/\D/g, "").slice(-10);
+    if (!isValidPhone(normalizedPhone)) {
+      return NextResponse.json({ message: "Invalid phone format" }, { status: 400 });
+    }
+    user.phone = normalizedPhone;
     // Normalize email
     const normalizedEmail = String(email).trim().toLowerCase();
     // Only update email if it changes and isn't used by another account

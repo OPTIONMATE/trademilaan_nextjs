@@ -3,7 +3,12 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { signToken } from "@/app/lib/jwt";
-import { isValidEmail, isValidOTP, incrementOTPAttempt, resetOTPAttempts } from "@/app/lib/validators";
+import {
+  isValidEmail,
+  isValidOTP,
+  incrementOTPAttempt,
+  resetOTPAttempts,
+} from "@/app/lib/validators";
 import { serializeAuthUser } from "@/app/lib/serializers";
 import { setSecureCookie } from "@/app/lib/apiHelpers";
 
@@ -15,15 +20,19 @@ export async function POST(req) {
     if (!email || !password || !otp) {
       return NextResponse.json(
         { error: "Email, password, and OTP are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    // Trim and normalize inputs
+    const normalizedEmail = email.toLowerCase().trim();
+    const trimmedOtp = otp.toString().trim();
+
     // Validate email format
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(normalizedEmail)) {
       return NextResponse.json(
         { error: "Invalid email format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,26 +40,24 @@ export async function POST(req) {
     if (typeof password !== "string" || password.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate OTP format
-    if (!isValidOTP(otp)) {
+    if (!isValidOTP(trimmedOtp)) {
       return NextResponse.json(
         { error: "Invalid OTP format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
-
-    const normalizedEmail = email.toLowerCase();
 
     // ✅ SECURITY: Track OTP verification attempts
     const attemptCheck = incrementOTPAttempt(normalizedEmail);
     if (attemptCheck.blocked) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -65,24 +72,19 @@ export async function POST(req) {
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    // Verify OTP
-    if (user.emailOtp !== otp) {
-      return NextResponse.json(
-        { error: "Invalid OTP" },
-        { status: 401 }
-      );
+    // Verify OTP (also trim stored OTP for comparison)
+    const storedOtp = user.emailOtp ? user.emailOtp.toString().trim() : null;
+    if (storedOtp !== trimmedOtp) {
+      return NextResponse.json({ error: "Invalid OTP" }, { status: 401 });
     }
 
     // Check if OTP is expired
     if (!user.emailOtpExpiry || user.emailOtpExpiry < new Date()) {
-      return NextResponse.json(
-        { error: "OTP has expired" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "OTP has expired" }, { status: 400 });
     }
 
     // Hash password
@@ -117,7 +119,7 @@ export async function POST(req) {
     console.error("Admin signup error:", error.message);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

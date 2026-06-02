@@ -14,6 +14,7 @@ import SubscriptionsSection from "../components/admin/SubscriptionsSection";
 import PaymentAuditSection from "../components/admin/PaymentAuditSection";
 import CouponSection from "../components/admin/CouponSection";
 import ContactMessagesSection from "../components/admin/ContactMessagesSection";
+import ComplaintStatsSection from "../components/admin/ComplaintStatsSection";
 
 const COLLECTIONS = [
   { key: "users", label: "Users", icon: "👥" },
@@ -21,6 +22,7 @@ const COLLECTIONS = [
   { key: "signedUsers", label: "Signed Users", icon: "📋" },
   { key: "riskprofiles", label: "Risk Profiles", icon: "📊" },
   { key: "invoices", label: "Invoices", icon: "📄" },
+  { key: "complaintStats", label: "Complaint Table", icon: "🧾" },
   { key: "analytics", label: "Admin Analytics", icon: "📈" },
   { key: "plans", label: "Create Plan", icon: "🎯" },
   { key: "coupons", label: "Coupons", icon: "🎟️" },
@@ -44,6 +46,7 @@ export default function AdminDashboardPage() {
     signedUsers: [],
     riskprofiles: [],
     invoices: [],
+    complaintStats: null,
   });
 
   const fetchAllData = async () => {
@@ -69,17 +72,17 @@ export default function AdminDashboardPage() {
         riskProfilesRes,
         invoicesRes,
         contactMessagesRes,
+        complaintStatsRes,
       ] = await Promise.all([
         safeFetchJson("/api/admin/users", { users: [] }),
         safeFetchJson("/api/admin/signed-agreements", { signedAgreements: [] }),
         safeFetchJson("/api/admin/signed-users", { signedUsers: [] }),
         safeFetchJson("/api/admin/riskprofiles", { riskprofiles: [] }),
-        safeFetchJson("/api/admin/contact-messages?limit=1", { stats: { unreadCount: 0 } }),
-        fetch("/api/admin/users").then((r) => r.json()),
-        fetch("/api/admin/signed-agreements").then((r) => r.json()),
-        fetch("/api/admin/riskprofiles").then((r) => r.json()),
-        fetch("/api/admin/invoices").then((r) => r.json()),
-        fetch("/api/admin/contact-messages?limit=1").then((r) => r.json()),
+        safeFetchJson("/api/admin/invoices", { invoices: [] }),
+        safeFetchJson("/api/admin/contact-messages?limit=1", {
+          stats: { unreadCount: 0 },
+        }),
+        safeFetchJson("/api/admin/complaint-stats", null),
       ]);
       setData({
         users: usersRes?.users || [],
@@ -87,6 +90,7 @@ export default function AdminDashboardPage() {
         signedUsers: signedUsersRes?.signedUsers || [],
         riskprofiles: riskProfilesRes?.riskprofiles || [],
         invoices: invoicesRes?.invoices || [],
+        complaintStats: complaintStatsRes || null,
       });
       setContactUnreadCount(contactMessagesRes?.stats?.unreadCount || 0);
     } catch (err) {
@@ -134,7 +138,9 @@ export default function AdminDashboardPage() {
       <div className="flex gap-6">
         {/* Sidebar */}
         <aside className="w-60 shrink-0 border rounded-lg p-4 bg-white sticky top-28 h-fit">
-          <h2 className="font-bold text-lg mb-4 text-neutral-900">Admin Menu</h2>
+          <h2 className="font-bold text-lg mb-4 text-neutral-900">
+            Admin Menu
+          </h2>
           <nav className="flex flex-col gap-1">
             {COLLECTIONS.map((col) => (
               <button
@@ -162,51 +168,54 @@ export default function AdminDashboardPage() {
         <section className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">{currentCollection?.label}</h1>
-            {loadingData && activeTab !== "analytics" && activeTab !== "plans" && activeTab !== "subscriptions" && activeTab !== "paymentAudit" && activeTab !== "contactMessages" && (
-              <div className="text-sm text-neutral-500">Loading...</div>
-            )}
+            {loadingData &&
+              activeTab !== "analytics" &&
+              activeTab !== "plans" &&
+              activeTab !== "subscriptions" &&
+              activeTab !== "paymentAudit" &&
+              activeTab !== "contactMessages" && (
+                <div className="text-sm text-neutral-500">Loading...</div>
+              )}
           </div>
 
           {/* Conditional rendering of sections */}
-          {activeTab === "users" && (
-            loadingData ? (
+          {activeTab === "users" &&
+            (loadingData ? (
               <p className="text-sm text-neutral-500">Loading data...</p>
             ) : (
               <UsersSection data={data.users} onRefresh={fetchAllData} />
-            )
-          )}
+            ))}
 
-          {activeTab === "signedAgreements" && (
-            loadingData ? (
+          {activeTab === "signedAgreements" &&
+            (loadingData ? (
               <p className="text-sm text-neutral-500">Loading data...</p>
             ) : (
               <SignedAgreementsSection data={data.signedAgreements} />
-            )
-          )}
+            ))}
 
-          {activeTab === "signedUsers" && (
-            loadingData ? (
+          {activeTab === "signedUsers" &&
+            (loadingData ? (
               <p className="text-sm text-neutral-500">Loading data...</p>
             ) : (
-              <SignedUsersSection data={data.signedUsers} onRefresh={fetchAllData} />
-            )
-          )}
+              <SignedUsersSection
+                data={data.signedUsers}
+                onRefresh={fetchAllData}
+              />
+            ))}
 
-          {activeTab === "riskprofiles" && (
-            loadingData ? (
+          {activeTab === "riskprofiles" &&
+            (loadingData ? (
               <p className="text-sm text-neutral-500">Loading data...</p>
             ) : (
               <RiskProfilesSection data={data.riskprofiles} />
-            )
-          )}
+            ))}
 
-          {activeTab === "invoices" && (
-            loadingData ? (
+          {activeTab === "invoices" &&
+            (loadingData ? (
               <p className="text-sm text-neutral-500">Loading data...</p>
             ) : (
               <InvoiceSection data={data.invoices} />
-            )
-          )}
+            ))}
 
           {activeTab === "analytics" && <AnalyticsSection />}
 
@@ -215,16 +224,17 @@ export default function AdminDashboardPage() {
           {activeTab === "coupons" && <CouponSection />}
 
           {activeTab === "contactMessages" && (
-            <ContactMessagesSection onUnreadCountChange={setContactUnreadCount} />
+            <ContactMessagesSection
+              onUnreadCountChange={setContactUnreadCount}
+            />
           )}
 
           {activeTab === "subscriptions" && <SubscriptionsSection />}
 
           {activeTab === "paymentAudit" && <PaymentAuditSection />}
+          {activeTab === "complaintStats" && <ComplaintStatsSection />}
         </section>
       </div>
     </main>
   );
 }
-
-

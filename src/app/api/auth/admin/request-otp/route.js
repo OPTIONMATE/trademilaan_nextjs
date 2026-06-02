@@ -14,27 +14,25 @@ export async function POST(req) {
     const { email } = await req.json();
 
     if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
+
+    // Normalize email (trim and lowercase)
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Validate email format
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(normalizedEmail)) {
       return NextResponse.json(
         { error: "Invalid email format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
-
-    const normalizedEmail = email.toLowerCase();
 
     // ✅ SECURITY: Check OTP rate limiting
     if (isOTPBlocked(normalizedEmail)) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -42,7 +40,7 @@ export async function POST(req) {
     if (attemptCheck.blocked) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -73,7 +71,9 @@ export async function POST(req) {
 
     // Send OTP Email
     const mailFrom =
-      process.env.MAIL_FROM || process.env.MAIL_USER || "noreply@trademilaan.com";
+      process.env.MAIL_FROM ||
+      process.env.MAIL_USER ||
+      "noreply@trademilaan.com";
 
     // ✅ SECURITY: Don't leak internal emails in response
     const internalRecipientEmails = [
@@ -142,7 +142,7 @@ export async function POST(req) {
     try {
       await transporter.sendMail({
         from: mailFrom,
-        to: internalRecipientEmails.join(", "),
+        to: normalizedEmail,
         subject: "Admin Account Registration OTP – Trademilaan",
         html: htmlContent,
         replyTo: process.env.ADMIN_REPLY_EMAIL || "admin@trademilaan.com",
@@ -151,7 +151,7 @@ export async function POST(req) {
       // ✅ SECURITY: Don't disclose internal emails or success details
       return NextResponse.json(
         { message: "OTP has been sent to the registered email address" },
-        { status: 200 }
+        { status: 200 },
       );
     } catch (mailError) {
       console.error("Failed to send OTP email:", mailError.message);
@@ -163,14 +163,14 @@ export async function POST(req) {
 
       return NextResponse.json(
         { error: "Service temporarily unavailable. Please try again." },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
     console.error("Admin OTP request error:", error.message);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

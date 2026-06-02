@@ -25,13 +25,13 @@ export default function AdminSignupForm() {
       const res = await fetch("/api/auth/admin/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Failed to send OTP");
+        setError(data.message || data.error || "Failed to send OTP");
         setLoading(false);
         return;
       }
@@ -69,13 +69,19 @@ export default function AdminSignupForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password, otp }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          otp: otp.trim(),
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Failed to create admin account");
+        setError(
+          data.message || data.error || "Failed to create admin account",
+        );
         setLoading(false);
         return;
       }
@@ -102,7 +108,8 @@ export default function AdminSignupForm() {
                   Admin Registration
                 </h2>
                 <p className="text-sm text-neutral-600 md:text-base">
-                  Create a secure admin account with OTP verification to manage the trademilaan platform.
+                  Create a secure admin account with OTP verification to manage
+                  the trademilaan platform.
                 </p>
               </div>
             </div>
@@ -120,7 +127,7 @@ export default function AdminSignupForm() {
                   <span className="text-sm font-semibold text-neutral-800">
                     Admin Email
                   </span>
-                  
+
                   <input
                     type="email"
                     placeholder="admin@example.com"
@@ -196,7 +203,13 @@ export default function AdminSignupForm() {
                 {/* Create Admin Button - Only enabled with all fields + OTP */}
                 <button
                   type="submit"
-                  disabled={loading || !otp || !password || !confirmPassword || otp.length !== 6}
+                  disabled={
+                    loading ||
+                    !otp ||
+                    !password ||
+                    !confirmPassword ||
+                    otp.length !== 6
+                  }
                   className="w-full rounded-full bg-lime-400 px-4 py-3 text-sm font-semibold text-neutral-900 shadow-[0_12px_30px_rgba(0,0,0,0.12)] ring-1 ring-black/10 transition hover:translate-y-[-1px] hover:shadow-[0_14px_36px_rgba(0,0,0,0.18)] hover:ring-black/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black/70 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Creating Account..." : "Create Admin Account"}

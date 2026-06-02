@@ -127,11 +127,6 @@ export default function ComplaintTable() {
           <h1 className="mt-4 text-4xl font-bold md:text-5xl">
             Complaint Table
           </h1>
-          <p className="mx-auto mt-4 max-w-3xl text-base text-slate-200 sm:text-lg">
-            This page displays the latest complaint metrics entered by the
-            admin. Values are updated automatically when an admin saves the
-            complaint table data.
-          </p>
         </div>
       </div>
 

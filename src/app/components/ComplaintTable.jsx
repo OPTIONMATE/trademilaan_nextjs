@@ -110,6 +110,9 @@ export default function ComplaintTable() {
     );
   }
 
+  const reportingMonth =
+    stats.reportingMonth || stats.monthlyTrends?.[0]?.month || "current month";
+
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900">
       <div className="relative overflow-hidden bg-black/70 py-24">
@@ -134,7 +137,7 @@ export default function ComplaintTable() {
         <section className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
           <div className="border-b bg-neutral-50 px-6 py-4">
             <h2 className="text-xl font-semibold text-neutral-900">
-              Data for the Month Ending
+              Data for the Month Ending {reportingMonth}
             </h2>
             <p className="text-sm text-neutral-600">
               Complaint counts by source and overall resolution statistics.
@@ -142,29 +145,47 @@ export default function ComplaintTable() {
           </div>
           <div className="overflow-x-auto p-4">
             <table className="min-w-full divide-y divide-neutral-200 text-sm">
+              <caption className="sr-only">
+                Complaint counts by source for the month ending {reportingMonth}.
+              </caption>
               <thead className="bg-neutral-100 text-left text-neutral-700">
                 <tr>
-                  <th className="px-4 py-3">S.No</th>
-                  <th className="px-4 py-3">Received From</th>
-                  <th className="px-4 py-3">
+                  <th scope="col" className="px-4 py-3">
+                    S.No
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Received From
+                  </th>
+                  <th scope="col" className="px-4 py-3">
                     Pending at the end of last month
                   </th>
-                  <th className="px-4 py-3">Received</th>
-                  <th className="px-4 py-3">Resolved</th>
-                  <th className="px-4 py-3">Total Pending</th>
-                  <th className="px-4 py-3">
+                  <th scope="col" className="px-4 py-3">
+                    Received
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Resolved
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Total Pending
+                  </th>
+                  <th scope="col" className="px-4 py-3">
                     Pending complaints &gt; 3 months
                   </th>
-                  <th className="px-4 py-3">Average resolution time (days)</th>
+                  <th scope="col" className="px-4 py-3">
+                    Average resolution time (days)
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
                 {stats.monthlyReceiptRows.map((row, index) => (
                   <tr key={row.source} className="bg-white">
                     <td className="px-4 py-3 text-neutral-600">{index + 1}</td>
-                    <td className="px-4 py-3 font-semibold text-neutral-900">
+                    <th
+                      scope="row"
+                      className="px-4 py-3 font-semibold text-neutral-900"
+                    >
                       {row.source}
-                    </td>
+                    </th>
                     <td className="px-4 py-3">{row.pendingAtEndLastMonth}</td>
                     <td className="px-4 py-3">{row.received}</td>
                     <td className="px-4 py-3">{row.resolved}</td>
@@ -175,7 +196,9 @@ export default function ComplaintTable() {
                 ))}
                 <tr className="bg-slate-50 font-semibold">
                   <td className="px-4 py-3">4</td>
-                  <td className="px-4 py-3">Grand Total</td>
+                  <th scope="row" className="px-4 py-3 text-left">
+                    Grand Total
+                  </th>
                   <td className="px-4 py-3">
                     {receiptTotals.pendingAtEndLastMonth}
                   </td>
@@ -202,25 +225,41 @@ export default function ComplaintTable() {
           </div>
           <div className="overflow-x-auto p-4">
             <table className="min-w-full divide-y divide-neutral-200 text-sm">
+              <caption className="sr-only">
+                Monthly trend of complaint disposal by month.
+              </caption>
               <thead className="bg-neutral-100 text-left text-neutral-700">
                 <tr>
-                  <th className="px-4 py-3">S.No</th>
-                  <th className="px-4 py-3">Month</th>
-                  <th className="px-4 py-3">
+                  <th scope="col" className="px-4 py-3">
+                    S.No
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Month
+                  </th>
+                  <th scope="col" className="px-4 py-3">
                     Carried forward from the Previous Month
                   </th>
-                  <th className="px-4 py-3">Received</th>
-                  <th className="px-4 py-3">Resolved</th>
-                  <th className="px-4 py-3">Pending</th>
+                  <th scope="col" className="px-4 py-3">
+                    Received
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Resolved
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Pending
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
                 {stats.monthlyTrends.map((row, index) => (
                   <tr key={row.month} className="bg-white">
                     <td className="px-4 py-3 text-neutral-600">{index + 1}</td>
-                    <td className="px-4 py-3 font-semibold text-neutral-900">
+                    <th
+                      scope="row"
+                      className="px-4 py-3 font-semibold text-neutral-900"
+                    >
                       {row.month}
-                    </td>
+                    </th>
                     <td className="px-4 py-3">{row.carriedForward}</td>
                     <td className="px-4 py-3">{row.received}</td>
                     <td className="px-4 py-3">{row.resolved}</td>
@@ -229,7 +268,9 @@ export default function ComplaintTable() {
                 ))}
                 <tr className="bg-slate-50 font-semibold">
                   <td className="px-4 py-3">5</td>
-                  <td className="px-4 py-3">Grand Total</td>
+                  <th scope="row" className="px-4 py-3 text-left">
+                    Grand Total
+                  </th>
                   <td className="px-4 py-3">{trendTotals.carriedForward}</td>
                   <td className="px-4 py-3">{trendTotals.received}</td>
                   <td className="px-4 py-3">{trendTotals.resolved}</td>
@@ -248,25 +289,41 @@ export default function ComplaintTable() {
           </div>
           <div className="overflow-x-auto p-4">
             <table className="min-w-full divide-y divide-neutral-200 text-sm">
+              <caption className="sr-only">
+                Annual trend of complaint disposal by year.
+              </caption>
               <thead className="bg-neutral-100 text-left text-neutral-700">
                 <tr>
-                  <th className="px-4 py-3">S.No</th>
-                  <th className="px-4 py-3">Year</th>
-                  <th className="px-4 py-3">
+                  <th scope="col" className="px-4 py-3">
+                    S.No
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Year
+                  </th>
+                  <th scope="col" className="px-4 py-3">
                     Carried forward from the Previous Year
                   </th>
-                  <th className="px-4 py-3">Received</th>
-                  <th className="px-4 py-3">Resolved</th>
-                  <th className="px-4 py-3">Pending</th>
+                  <th scope="col" className="px-4 py-3">
+                    Received
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Resolved
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Pending
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
                 {stats.annualTrends.map((row, index) => (
                   <tr key={row.year} className="bg-white">
                     <td className="px-4 py-3 text-neutral-600">{index + 1}</td>
-                    <td className="px-4 py-3 font-semibold text-neutral-900">
+                    <th
+                      scope="row"
+                      className="px-4 py-3 font-semibold text-neutral-900"
+                    >
                       {row.year}
-                    </td>
+                    </th>
                     <td className="px-4 py-3">{row.carriedForward}</td>
                     <td className="px-4 py-3">{row.received}</td>
                     <td className="px-4 py-3">{row.resolved}</td>
@@ -275,7 +332,9 @@ export default function ComplaintTable() {
                 ))}
                 <tr className="bg-slate-50 font-semibold">
                   <td className="px-4 py-3">3</td>
-                  <td className="px-4 py-3">Grand Total</td>
+                  <th scope="row" className="px-4 py-3 text-left">
+                    Grand Total
+                  </th>
                   <td className="px-4 py-3">{annualTotals.carriedForward}</td>
                   <td className="px-4 py-3">{annualTotals.received}</td>
                   <td className="px-4 py-3">{annualTotals.resolved}</td>

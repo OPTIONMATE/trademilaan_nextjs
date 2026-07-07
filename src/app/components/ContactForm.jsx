@@ -42,21 +42,25 @@ const ContactForm = () => {
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email =
+        "Enter your email address, for example name@example.com.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+      newErrors.email =
+        "Enter a valid email address, for example name@example.com.";
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
+      newErrors.phone =
+        "Enter your 10-digit phone number, for example 7702262206.";
     } else if (!/^\d{8,15}$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid numeric phone number";
+      newErrors.phone =
+        "Enter a valid phone number using digits only (8 to 15 digits).";
     }
 
     if (!formData.message.trim()) {
-      newErrors.message = "Message is required";
+      newErrors.message = "Please enter your message.";
     } else if (formData.message.trim().length < 10) {
-      newErrors.message = "Message must be at least 10 characters";
+      newErrors.message = "Please enter at least 10 characters in your message.";
     }
 
     setErrors(newErrors);
@@ -128,6 +132,9 @@ const ContactForm = () => {
 
         {submitStatus.message && (
           <div
+            role={submitStatus.type === "error" ? "alert" : "status"}
+            aria-live={submitStatus.type === "error" ? "assertive" : "polite"}
+            aria-atomic="true"
             className={`mb-6 rounded-lg border px-4 py-3 text-sm font-medium ${
               submitStatus.type === "success"
                 ? "border-green-200 bg-green-50 text-green-700"
@@ -168,11 +175,14 @@ const ContactForm = () => {
                   ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                   : "border-neutral-300 focus:border-lime-500 focus:ring-lime-500"
               } focus:outline-none focus:ring-2 transition-colors`}
-              placeholder="Your full name"
-              maxLength={100}
+              autoComplete="name"
+              aria-invalid={errors.name ? "true" : undefined}
+              aria-describedby={errors.name ? "name-error" : undefined}
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              <p id="name-error" role="alert" className="mt-1 text-sm text-red-500">
+                {errors.name}
+              </p>
             )}
           </div>
 
@@ -195,11 +205,16 @@ const ContactForm = () => {
                   ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                   : "border-neutral-300 focus:border-lime-500 focus:ring-lime-500"
               } focus:outline-none focus:ring-2 transition-colors`}
+              autoComplete="email"
+              aria-invalid={errors.email ? "true" : undefined}
+              aria-describedby={errors.email ? "email-error" : undefined}
               placeholder="your.email@example.com"
               maxLength={120}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              <p id="email-error" role="alert" className="mt-1 text-sm text-red-500">
+                {errors.email}
+              </p>
             )}
           </div>
 
@@ -222,11 +237,16 @@ const ContactForm = () => {
                   ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                   : "border-neutral-300 focus:border-lime-500 focus:ring-lime-500"
               } focus:outline-none focus:ring-2 transition-colors`}
+              autoComplete="tel"
+              aria-invalid={errors.phone ? "true" : undefined}
+              aria-describedby={errors.phone ? "phone-error" : undefined}
               placeholder="7702262206"
               maxLength={15}
             />
             {errors.phone && (
-              <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
+              <p id="phone-error" role="alert" className="mt-1 text-sm text-red-500">
+                {errors.phone}
+              </p>
             )}
           </div>
 
@@ -249,13 +269,16 @@ const ContactForm = () => {
                   ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                   : "border-neutral-300 focus:border-lime-500 focus:ring-lime-500"
               } focus:outline-none focus:ring-2 transition-colors resize-none`}
-              placeholder="Tell us how we can help you..."
               maxLength={2000}
+              aria-invalid={errors.message ? "true" : undefined}
+              aria-describedby={errors.message ? "message-error message-count" : "message-count"}
             ></textarea>
             {errors.message && (
-              <p className="mt-1 text-sm text-red-500">{errors.message}</p>
+              <p id="message-error" role="alert" className="mt-1 text-sm text-red-500">
+                {errors.message}
+              </p>
             )}
-            <p className="mt-1 text-xs text-neutral-500 text-right">
+            <p id="message-count" className="mt-1 text-xs text-neutral-500 text-right">
               {formData.message.length}/2000
             </p>
           </div>

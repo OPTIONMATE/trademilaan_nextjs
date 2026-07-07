@@ -16,27 +16,13 @@ const dos = [
 export default function DosSection() {
   return (
     <div className="max-w-6xl mx-auto py-12 px-4">
-      <h2 className="text-2xl font-bold mb-4">Do’s</h2>
+      <h2 className="text-2xl font-bold mb-4">Do&apos;s for an Investor</h2>
 
-      <ul className="list-decimal list-inside space-y-4 text-gray-700">
+      <ul className="list-disc list-inside space-y-4 text-gray-700">
         {dos.map((item, i) => (
-          <div key={i}>
-            <li>{item}</li>
-
-            {/* 👉 Show first image after 6th point */}
-            {i === 5 && (
-              <div className="my-4 text-center text-gray-400">
-                [Do's image 1 removed]
-              </div>
-            )}
-
-            {/* 👉 Show second image after 10th point */}
-            {i === 9 && (
-              <div className="my-4 text-center text-gray-400">
-                [Do's image 2 removed]
-              </div>
-            )}
-          </div>
+          <li key={i} className="leading-relaxed">
+            {item}
+          </li>
         ))}
       </ul>
     </div>

@@ -139,15 +139,16 @@ export default function PlansSection() {
     <div className="w-full py-16 sm:py-24 bg-linear-to-b from-white via-[#f6f9ff] to-white">
       {/* Section Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-12 sm:mb-16">
-        <h2 className="text-4xl sm:text-5xl lg:text-4xl font-black text-neutral-900 mb-6">
+        <h1 className="text-4xl sm:text-5xl lg:text-4xl font-black text-neutral-900 mb-6">
           Choose Your <span className="bg-linear-to-r from-[#9BE749] to-[#6d5bff] bg-clip-text text-transparent">Perfect Plan</span>
-        </h2>
+        </h1>
         <p className="text-neutral-700 text-md max-w-3xl mx-auto font-medium">
           Select the perfect subscription plan tailored to your trading needs. Unlock premium insights, real-time analytics, and expert strategies.
         </p>
       </div>
 
       {/* Plans Grid */}
+      <h2 className="sr-only">Available subscription plans</h2>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-16 sm:mb-20">
         {plans.map((plan) => (
           <PlanCard

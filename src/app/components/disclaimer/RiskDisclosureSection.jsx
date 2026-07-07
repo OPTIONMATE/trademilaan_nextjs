@@ -30,7 +30,7 @@ export default function RiskDisclosureSection() {
       <div className="w-full h-96 bg-gray-200 rounded-xl overflow-hidden">
         <img
           src="/riskDisclousre.jpg"
-          alt=""
+          alt="Risk disclosure and disclaimer information for Sasikumar Peyyala SEBI-registered investment advisor"
           className="h-full w-full object-cover"
         />
       </div>

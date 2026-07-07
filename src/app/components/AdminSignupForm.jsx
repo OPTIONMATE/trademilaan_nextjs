@@ -129,9 +129,12 @@ export default function AdminSignupForm() {
                   </span>
 
                   <input
+                    id="admin-email"
+                    name="email"
                     type="email"
                     placeholder="admin@example.com"
                     required
+                    autoComplete="email"
                     className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -160,10 +163,14 @@ export default function AdminSignupForm() {
                     Check your email for the 6-digit OTP (expires in 5 minutes)
                   </p>
                   <input
+                    id="admin-otp"
+                    name="otp"
                     type="text"
+                    inputMode="numeric"
                     placeholder="123456"
                     required
                     maxLength="6"
+                    autoComplete="one-time-code"
                     className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200 tracking-widest text-center"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
@@ -176,9 +183,12 @@ export default function AdminSignupForm() {
                     Password
                   </span>
                   <input
+                    id="admin-password"
+                    name="password"
                     type="password"
                     placeholder="Enter a strong password"
                     required
+                    autoComplete="new-password"
                     className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -191,9 +201,12 @@ export default function AdminSignupForm() {
                     Confirm Password
                   </span>
                   <input
+                    id="admin-confirm-password"
+                    name="confirmPassword"
                     type="password"
                     placeholder="Confirm your password"
                     required
+                    autoComplete="new-password"
                     className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

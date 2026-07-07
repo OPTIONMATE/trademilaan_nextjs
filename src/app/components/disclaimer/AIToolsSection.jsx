@@ -31,7 +31,13 @@ export default function AIToolsSection() {
         </p>
       </div>
 
-      <div className="w-full h-72 bg-gray-200 rounded-xl"></div>
+      <div className="w-full h-72 rounded-xl overflow-hidden">
+        <img
+          src="/service2.jpg"
+          alt="Illustration representing AI-assisted research and advisory services"
+          className="h-full w-full object-cover"
+        />
+      </div>
     </div>
   );
 }

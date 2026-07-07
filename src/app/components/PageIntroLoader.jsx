@@ -30,6 +30,8 @@ export default function PageIntroLoader() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: "easeInOut" }}
+          role="dialog"
+          aria-label="Page loading animation"
         >
           <motion.div
             className="relative flex h-32 w-32 items-center justify-center"

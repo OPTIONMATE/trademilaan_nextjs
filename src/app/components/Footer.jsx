@@ -7,6 +7,7 @@ const Footer = () => {
 
   const quickLinks = [
     { name: "Grievance Redressal", path: "/grievance-redressal" },
+    { name: "Accessibility Statement", path: "/accessibility" },
     { name: "MITC", path: "/mitc" },
     { name: "Terms and Condition", path: "/terms-and-condition" },
     { name: "Refund Policy", path: "/refund-policy" },
@@ -16,38 +17,29 @@ const Footer = () => {
 
   const socialLinks = [
     {
-      name: "Facebook",
+      name: "Follow trademilaan on Facebook",
       icon: "M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z",
-      url: "#",
+      url: "https://www.facebook.com/trademilaan",
     },
     {
-      name: "Twitter",
+      name: "Follow trademilaan on Twitter",
       icon: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z",
-      url: "#",
+      url: "https://twitter.com/trademilaan",
     },
     {
-      name: "YouTube",
+      name: "Follow trademilaan on YouTube",
       icon: "M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z",
-      url: "#",
+      url: "https://www.youtube.com/@trademilaan",
     },
   ];
 
-  return (
-    <footer className="relative bottom-0 w-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "#222",
-          }}
-        ></div>
-      </div>
+  const linkClass =
+    "text-white hover:opacity-90 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-opacity duration-300 text-sm flex items-center group underline underline-offset-2";
 
+  return (
+    <footer className="footer-dark relative bottom-0 w-full bg-neutral-900 text-white overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 md:py-20">
-        {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-12 mb-12">
-          {/* About Us Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -55,10 +47,8 @@ const Footer = () => {
             transition={{ duration: 0.5 }}
             className="space-y-4"
           >
-            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-transparent">
-              About Us
-            </h3>
-            <p className="text-neutral-300 leading-relaxed text-sm">
+            <h2 className="text-2xl font-bold mb-4 text-white">About Us</h2>
+            <p className="text-white leading-relaxed text-sm">
               Sasikumar Peyyala is a SEBI-registered research analyst with a
               deep passion for AI and machine learning-driven trading
               strategies. With over nine years of experience in financial
@@ -66,7 +56,6 @@ const Footer = () => {
             </p>
           </motion.div>
 
-          {/* Quick Links Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -74,17 +63,12 @@ const Footer = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-4"
           >
-            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-transparent">
-              Quick Links
-            </h3>
+            <h2 className="text-2xl font-bold mb-4 text-white">Quick Links</h2>
             <ul className="space-y-3">
-              {quickLinks.map((link, index) => (
-                <li key={index}>
-                  <Link
-                    href={link.path}
-                    className="text-neutral-300 hover:text-lime-400 transition-colors duration-300 text-sm flex items-center group"
-                  >
-                    <span className="mr-2 text-lime-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {quickLinks.map((link) => (
+                <li key={link.path}>
+                  <Link href={link.path} className={linkClass}>
+                    <span className="mr-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-300" aria-hidden="true">
                       →
                     </span>
                     {link.name}
@@ -94,7 +78,6 @@ const Footer = () => {
             </ul>
           </motion.div>
 
-          {/* Follow Us Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -102,22 +85,21 @@ const Footer = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="space-y-4"
           >
-            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-transparent">
-              Follow Us
-            </h3>
+            <h2 className="text-2xl font-bold mb-4 text-white">Follow Us</h2>
             <div className="flex gap-4">
-              {socialLinks.map((social, index) => (
+              {socialLinks.map((social) => (
                 <a
-                  key={index}
+                  key={social.url}
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-lime-400 hover:scale-110 transition-all duration-300 group"
+                  className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 hover:scale-110 transition-all duration-300 group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   aria-label={social.name}
                 >
                   <svg
-                    className="w-5 h-5 fill-white group-hover:fill-black transition-colors duration-300"
+                    className="w-5 h-5 fill-white"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path d={social.icon} />
                   </svg>
@@ -126,7 +108,6 @@ const Footer = () => {
             </div>
           </motion.div>
 
-          {/* Contact Us Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -134,77 +115,51 @@ const Footer = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="space-y-4"
           >
-            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-transparent">
-              Contact Us
-            </h3>
+            <h2 className="text-2xl font-bold mb-4 text-white">Contact Us</h2>
             <div className="space-y-3 text-sm">
-              <a
-                href="tel:07702262206"
-                className="flex items-center gap-3 text-neutral-300 hover:text-lime-400 transition-colors duration-300 group"
-              >
-                <svg
-                  className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
+              <a href="tel:07702262206" className={linkClass}>
                 7702262206
               </a>
-
-              <a
-                href="mailto:spkumar.researchanalyst@gmail.com"
-                className="flex items-center gap-3 text-neutral-300 hover:text-lime-400 transition-colors duration-300 group break-all"
-              >
-                <svg
-                  className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
+              <a href="mailto:spkumar.researchanalyst@gmail.com" className={`${linkClass} break-all`}>
                 spkumar.researchanalyst@gmail.com
               </a>
-
-              <div className="flex items-start gap-3 text-neutral-300 group">
-                <svg
-                  className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="leading-relaxed">
-                  1 24,29 4 Kummaripalem Centerr, Near D S M, High School,
-                  Vidyadharapuram, Vijayawada, VIJAYAWADA, ANDHRA PRADESH,
-                  520012
-                </span>
-              </div>
+              <p className="text-white leading-relaxed">
+                1 24,29 4 Kummaripalem Centerr, Near D S M, High School,
+                Vidyadharapuram, Vijayawada, VIJAYAWADA, ANDHRA PRADESH, 520012
+              </p>
             </div>
           </motion.div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-white/10 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-neutral-400">
+        <div className="border-t border-neutral-700 pt-8">
+          <div className="mb-8 p-6 bg-neutral-800 border border-neutral-700 rounded-lg">
+            <h2 className="text-lg font-semibold mb-3 text-white">Accessibility Statement</h2>
+            <p className="text-white text-sm leading-relaxed">
+              We are committed to digital accessibility for people with disabilities and aim to meet{" "}
+              <abbr title="Web Content Accessibility Guidelines">WCAG</abbr> 2.1 Level AA.{" "}
+              <Link href="/accessibility" className="underline hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                Read our full accessibility statement
+              </Link>
+              {" "}or email{" "}
+              <a href="mailto:spkumar.researchanalyst@gmail.com" className="underline hover:opacity-90">
+                spkumar.researchanalyst@gmail.com
+              </a>{" "}
+              to report an issue.
+            </p>
+          </div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white">
             <p className="text-center md:text-left">
               trademilaan Copyright©{currentYear}. All Right Reserved.
             </p>
             <p className="text-center md:text-right">
               Design & Developed by{" "}
-              <span className="text-lime-400 font-semibold">trademilaan</span>
+              <span className="font-semibold">trademilaan</span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Gradient Accent */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-lime-400 via-green-500 to-lime-400"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-lime-600" aria-hidden="true" />
     </footer>
   );
 };

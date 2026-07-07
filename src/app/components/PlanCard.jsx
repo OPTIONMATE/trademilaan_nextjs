@@ -93,7 +93,9 @@ export default function PlanCard({ plan, activeSubscription = null }) {
               isHovered
                 ? "bg-[#9BE749]/10 hover:bg-[#9BE749]/20"
                 : "bg-neutral-100 hover:bg-neutral-200"
-            }`}>
+            }`}
+            aria-label={`Add ${plan.name} to wishlist`}
+            >
               <Heart size={18} className={`transition-colors ${
                 isHovered ? "text-[#9BE749] fill-[#9BE749]" : "text-neutral-600"
               }`} />
@@ -154,13 +156,14 @@ export default function PlanCard({ plan, activeSubscription = null }) {
           {/* CTA Button */}
           <button
             onClick={handleBuyNow}
+            aria-label={isActivePlan ? `View your active ${plan.name} subscription ending on ${activeTillLabel}` : `Purchase ${plan.name} plan for ₹${plan.price.toLocaleString('en-IN')}`}
             className={`w-full px-6 py-2 sm:py-3 font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 group/btn transform shadow-lg hover:shadow-xl cursor-pointer ${
               isActivePlan
                 ? "bg-neutral-200 text-neutral-700 hover:bg-neutral-300"
                 : "bg-[#9BE749] text-black hover:bg-[#7dd938]"
             }`}
           >
-            {isActivePlan ? "View Active Subscription" : "Buy Now"}
+            {isActivePlan ? "View Active Subscription" : `Buy ${plan.name}`}
             <ChevronRight size={18} className="transition-transform group-hover/btn:translate-x-1" />
           </button>
 

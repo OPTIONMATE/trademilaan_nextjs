@@ -2,6 +2,7 @@ import connectDB from "@/app/lib/db";
 import ComplaintStats from "@/app/lib/models/ComplaintStats";
 
 const DEFAULT_STATS = {
+  reportingMonth: "April 2026",
   monthlyReceiptRows: [
     {
       source: "Directly from Investors",

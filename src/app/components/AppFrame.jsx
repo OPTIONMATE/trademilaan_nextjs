@@ -17,8 +17,15 @@ export default function AppFrame({ children }) {
     <>
       <PageIntroLoader />
       <LogoutOverlay />
+      <a href="#main" className="skip-link">
+        Skip to main content
+      </a>
       {!hideNav && !loggingOut && <Navbar />}
-      {!loggingOut && children}
+      {!loggingOut && (
+        <main id="main" tabIndex={-1}>
+          {children}
+        </main>
+      )}
       {!loggingOut && <Footer />}
     </>
   );

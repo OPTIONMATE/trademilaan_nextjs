@@ -145,7 +145,8 @@ export default function Cards() {
               <div>
                 <Link
                   href="/services"
-                  className="mt-2 flex w-fit items-center justify-center gap-3 self-start rounded-full bg-white/15 px-5 py-3 text-sm font-semibold leading-none backdrop-blur transition-all duration-300 hover:bg-white hover:text-black group"
+                  aria-label={`Learn more about ${service.title} trading service`}
+                  className="mt-2 flex w-fit items-center justify-center gap-3 self-start rounded-full bg-white/15 px-5 py-3 text-sm font-semibold leading-none backdrop-blur transition-all duration-300 hover:bg-white hover:text-black group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
                   Learn More
                   <svg

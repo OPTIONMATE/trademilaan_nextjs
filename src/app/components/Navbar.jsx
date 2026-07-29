@@ -18,6 +18,7 @@ export function Navbar() {
       { href: "/", label: "Home" },
       { href: "/services", label: "Services" },
       { href: "/investor-charter", label: "Investor Charter" },
+      { href: "/complaint-table", label: "Complaints Table" },
       { href: "/disclaimer-disclosure", label: "Disclaimer & Disclosure" },
       { href: "/mitc", label: "MITC" },
       { href: "/contact", label: "Contact Us" },
@@ -107,7 +108,7 @@ export function Navbar() {
               {/* Dropdown Menu */}
               {profileOpen && (
                 <>
-                  <div 
+                  <div
                     className="fixed inset-0 z-30"
                     onClick={() => setProfileOpen(false)}
                   />

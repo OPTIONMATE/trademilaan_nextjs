@@ -1,15 +1,19 @@
 /**
  * ROOT MIDDLEWARE for Next.js 16 (src/middleware.js)
- * 
+ *
  * Executes for ALL requests before they reach route handlers
  * Adds security headers, CSRF validation, authentication checks
- * 
+ *
  * IMPORTANT: This file MUST be at src/middleware.js (root of src/)
  * NOT in src/lib/middleware.js
  */
 
-import { NextResponse } from 'next/server';
-import { verifyCSRFToken, setCSRFCookie, getCSRFToken } from './app/lib/csrfProtection';
+import { NextResponse } from "next/server";
+import {
+  verifyCSRFToken,
+  setCSRFCookie,
+  getCSRFToken,
+} from "./app/lib/csrfProtection";
 
 /**
  * Security Headers
@@ -19,7 +23,7 @@ function setSecurityHeaders(response) {
   // Content Security Policy (CSP)
   // Prevents inline scripts, external script injection, etc.
   response.headers.set(
-    'Content-Security-Policy',
+    "Content-Security-Policy",
     [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.cloudinary.com *.razorpay.com",
@@ -30,41 +34,44 @@ function setSecurityHeaders(response) {
       "frame-src 'self' *.razorpay.com maps.google.com www.google.com",
       "form-action 'self'",
       "frame-ancestors 'none'",
-    ].join('; ')
+    ].join("; "),
   );
-  
+
   // X-Frame-Options - Prevent clickjacking
-  response.headers.set('X-Frame-Options', 'DENY');
-  
+  response.headers.set("X-Frame-Options", "DENY");
+
   // X-Content-Type-Options - Prevent MIME sniffing
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  
+  response.headers.set("X-Content-Type-Options", "nosniff");
+
   // X-XSS-Protection - Legacy XSS protection
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+
   // Referrer-Policy - Protect privacy
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
   // Permissions-Policy - Restrict browser features
-  response.headers.set('Permissions-Policy', [
-    'geolocation=()',
-    'microphone=()',
-    'camera=()',
-    'payment=(self)',
-    'usb=()',
-    'magnetometer=()',
-    'gyroscope=()',
-    'accelerometer=()',
-  ].join(','));
-  
+  response.headers.set(
+    "Permissions-Policy",
+    [
+      "geolocation=()",
+      "microphone=()",
+      "camera=()",
+      "payment=(self)",
+      "usb=()",
+      "magnetometer=()",
+      "gyroscope=()",
+      "accelerometer=()",
+    ].join(","),
+  );
+
   // Strict-Transport-Security (HSTS) - Enforce HTTPS
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     response.headers.set(
-      'Strict-Transport-Security',
-      'max-age=63072000; includeSubDomains; preload'
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
     );
   }
-  
+
   return response;
 }
 
@@ -74,13 +81,13 @@ function setSecurityHeaders(response) {
 export async function middleware(request) {
   const { pathname, searchParams } = request.nextUrl;
   const method = request.method.toUpperCase();
-  
+
   // Create response
   let response = NextResponse.next();
-  
+
   // 1. Add security headers to all responses
   response = setSecurityHeaders(response);
-  
+
   // 2. Ensure CSRF token exists in session
   // (Will be set as cookie for client to use)
   const csrfToken = getCSRFToken(request);
@@ -88,68 +95,72 @@ export async function middleware(request) {
     // Initialize CSRF token for new sessions
     setCSRFCookie(response);
   }
-  
+
   // 3. CSRF protection for state-changing requests
-  const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+  const safeMethods = ["GET", "HEAD", "OPTIONS"];
   const isStateChangingRequest = !safeMethods.includes(method);
-  
+
   // Routes that don't need CSRF protection (already have their own)
   const csrfExemptRoutes = [
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/auth/logout',
-    '/api/auth/google',
-    '/api/contact',
-    '/api/user/accept-disclaimer',
-    '/api/payment/verify', // Razorpay webhook doesn't have CSRF token
-    '/api/buy/', // Buy endpoints use JWT authentication
-    '/api/agreement/', // Agreement endpoints use JWT authentication
-    '/api/user/', // User endpoints use JWT authentication
-    '/api/signature/', // Signature endpoints use JWT authentication
-    '/api/risk-profile/', // Risk profile endpoints use JWT authentication
-    '/api/payment/order', // Payment order endpoint uses JWT authentication
-    '/api/admin/', // Admin endpoints use JWT authentication
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/logout",
+    "/api/auth/google",
+    "/api/auth/admin/", // Admin auth endpoints (signup, OTP)
+    "/api/contact",
+    "/api/user/accept-disclaimer",
+    "/api/payment/verify", // Razorpay webhook doesn't have CSRF token
+    "/api/buy/", // Buy endpoints use JWT authentication
+    "/api/agreement/", // Agreement endpoints use JWT authentication
+    "/api/user/", // User endpoints use JWT authentication
+    "/api/signature/", // Signature endpoints use JWT authentication
+    "/api/risk-profile/", // Risk profile endpoints use JWT authentication
+    "/api/payment/order", // Payment order endpoint uses JWT authentication
+    "/api/admin/", // Admin endpoints use JWT authentication
   ];
-  
-  const isExempt = csrfExemptRoutes.some(route => pathname.startsWith(route));
-  
+
+  const isExempt = csrfExemptRoutes.some((route) => pathname.startsWith(route));
+
   if (isStateChangingRequest && !isExempt) {
     // Validate CSRF token for POST/PUT/DELETE requests
     const isValid = await verifyCSRFToken(request);
     if (!isValid) {
       console.warn(`CSRF validation failed: ${method} ${pathname}`);
       return NextResponse.json(
-        { error: 'CSRF token validation failed' },
-        { status: 403 }
+        { error: "CSRF token validation failed" },
+        { status: 403 },
       );
     }
   }
-  
+
   // 4. Redirect HTTP to HTTPS in production
-  if (process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true') {
-    if (request.headers.get('x-forwarded-proto') !== 'https') {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.FORCE_HTTPS === "true"
+  ) {
+    if (request.headers.get("x-forwarded-proto") !== "https") {
       return NextResponse.redirect(
-        `https://${request.headers.get('host')}${pathname}${
-          searchParams.toString() ? '?' + searchParams.toString() : ''
+        `https://${request.headers.get("host")}${pathname}${
+          searchParams.toString() ? "?" + searchParams.toString() : ""
         }`,
-        { status: 308 }
+        { status: 308 },
       );
     }
   }
-  
+
   // 5. Authentication check for protected routes
-  const protectedRoutes = ['/dashboard', '/', '/admin'];
-  const token = request.cookies.get('token')?.value;
-  
+  const protectedRoutes = ["/dashboard", "/admin"];
+  const token = request.cookies.get("token")?.value;
+
   if (protectedRoutes.includes(pathname) && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-  
+
   // 6. Add security response headers
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+
   return response;
 }
 
@@ -160,6 +171,6 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     // Run on all routes except static files and next internals
-    '/((?!_next/static|_next/image|favicon.ico|public|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)',
+    "/((?!_next/static|_next/image|favicon.ico|public|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)",
   ],
 };

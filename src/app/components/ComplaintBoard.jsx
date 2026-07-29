@@ -4,13 +4,14 @@ export default function ComplaintBoard() {
   return (
     <div className="w-full bg-white">
       {/* ===== Hero Banner ===== */}
-      <div className="relative h-[260px] w-full flex items-center justify-center">
+      <div className="relative h-[260px] w-full flex items-center justify-center bg-neutral-900">
         <Image
-          src="/complaint-banner.jpg" // put banner image in public/
-          alt="Complaint Board"
+          src="/image.png"
+          alt=""
           fill
-          className="object-cover"
+          className="object-cover opacity-40"
           priority
+          aria-hidden="true"
         />
         <div className="absolute inset-0 bg-black/60"></div>
         <h1 className="relative z-10 text-white text-4xl md:text-5xl font-bold">
@@ -76,21 +77,27 @@ export default function ComplaintBoard() {
 
         <section>
           <h2 className="text-2xl font-bold mb-3">Escalation Mechanism</h2>
-          <p>
-            If you are not satisfied with our resolution, you may escalate your
-            complaint to SEBI through the SCORES portal or use any other dispute
-            resolution mechanism prescribed by SEBI.
-          </p>
           <p className="mt-2">
-            SCORES Portal:{" "}
+            If you are not satisfied with our resolution, you may escalate your
+            complaint to SEBI through the{" "}
             <a
               href="https://scores.sebi.gov.in"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 underline"
             >
-              https://scores.sebi.gov.in
+              SEBI SCORES grievance portal
+            </a>{" "}
+            or use the{" "}
+            <a
+              href="https://smartodr.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              SMART ODR online dispute resolution platform
             </a>
+            .
           </p>
         </section>
 

@@ -1,10 +1,12 @@
 export default function TermsSection() {
   return (
     <div className="max-w-7xl mx-auto py-12 px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-      <div className="w-full h-96 bg-gray-200 rounded-xl overflow-hidden">
-        <div className="h-full w-full flex items-center justify-center text-gray-400">
-          [Terms image removed]
-        </div>
+      <div className="w-full h-96 rounded-xl overflow-hidden">
+        <img
+          src="/terms.jpg"
+          alt="Terms and conditions for issuance of research reports by Sasikumar Peyyala"
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <div>

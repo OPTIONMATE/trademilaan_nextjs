@@ -7,7 +7,9 @@ const ContactForm = () => {
     name: "",
     email: "",
     phone: "",
+    subject: "",
     message: "",
+    consent: false,
     website: "",
   });
 
@@ -18,10 +20,14 @@ const ContactForm = () => {
   const [submitStatus, setSubmitStatus] = useState({ type: "", message: "" });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     const normalizedValue =
-      name === "phone" ? value.replace(/\D/g, "").slice(0, 10) : value;
+      name === "phone"
+        ? value.replace(/\D/g, "").slice(0, 10)
+        : type === "checkbox"
+          ? checked
+          : value;
 
     setFormData((prev) => ({
       ...prev,
@@ -56,16 +62,26 @@ const ContactForm = () => {
         if (!value.trim()) {
           return "Please enter your 10 digit mobile number.";
         }
-        if (!/^\d{10}$/.test(value)) {
-          return "Please enter your 10 digit mobile number.";
+        if (!/^[6-9]\d{9}$/.test(value)) {
+          return "Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.";
+        }
+        return "";
+      case "subject":
+        if (!value.trim()) {
+          return "Please choose a subject from the dropdown.";
         }
         return "";
       case "message":
         if (!value.trim()) {
           return "Please write a message.";
         }
-        if (value.trim().length < 10) {
-          return "Please write a message of at least 10 characters.";
+        if (value.trim().length < 20) {
+          return "Please write a message of at least 20 characters.";
+        }
+        return "";
+      case "consent":
+        if (!value) {
+          return "You must agree to the Privacy Policy and data collection consent before submitting.";
         }
         return "";
       default:
@@ -74,13 +90,15 @@ const ContactForm = () => {
   };
 
   const handleBlur = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === "checkbox" ? checked : value;
+
     setTouched((prev) => ({
       ...prev,
       [name]: true,
     }));
 
-    const fieldError = validateField(name, value);
+    const fieldError = validateField(name, fieldValue);
     setErrors((prev) => ({
       ...prev,
       [name]: fieldError,
@@ -90,12 +108,14 @@ const ContactForm = () => {
   const validate = () => {
     const newErrors = {};
 
-    ["name", "email", "phone", "message"].forEach((field) => {
-      const fieldError = validateField(field, formData[field]);
-      if (fieldError) {
-        newErrors[field] = fieldError;
-      }
-    });
+    ["name", "email", "phone", "subject", "message", "consent"].forEach(
+      (field) => {
+        const fieldError = validateField(field, formData[field]);
+        if (fieldError) {
+          newErrors[field] = fieldError;
+        }
+      },
+    );
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -138,7 +158,9 @@ const ContactForm = () => {
         name: "",
         email: "",
         phone: "",
+        subject: "",
         message: "",
+        consent: false,
         website: "",
       });
       setErrors({});
@@ -214,6 +236,7 @@ const ContactForm = () => {
               autoComplete="name"
               aria-invalid={errors.name ? "true" : undefined}
               aria-describedby={errors.name ? "name-error" : undefined}
+              placeholder="e.g. Rahul Sharma"
             />
             {errors.name && (
               <p
@@ -269,7 +292,7 @@ const ContactForm = () => {
               htmlFor="phone"
               className="block text-sm font-semibold text-neutral-700 mb-2"
             >
-              Phone Number <span className="text-red-500">*</span>
+              Mobile Number <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
@@ -286,9 +309,12 @@ const ContactForm = () => {
               autoComplete="tel"
               aria-invalid={errors.phone ? "true" : undefined}
               aria-describedby={errors.phone ? "phone-error" : undefined}
-              placeholder="7702262206"
+              placeholder="e.g. 9811735535"
               maxLength={10}
             />
+            <p className="mt-1 text-xs text-neutral-500">
+              Start with 6–9. No spaces, dashes, or country code.
+            </p>
             {errors.phone && (
               <p
                 id="phone-error"
@@ -300,13 +326,53 @@ const ContactForm = () => {
             )}
           </div>
 
+          {/* Subject Field */}
+          <div>
+            <label
+              htmlFor="subject"
+              className="block text-sm font-semibold text-neutral-700 mb-2"
+            >
+              Subject <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="subject"
+              name="subject"
+              value={formData.subject}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`w-full px-4 py-3 rounded-lg border ${
+                errors.subject
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                  : "border-neutral-300 focus:border-lime-500 focus:ring-lime-500"
+              } bg-white focus:outline-none focus:ring-2 transition-colors`}
+              aria-invalid={errors.subject ? "true" : undefined}
+              aria-describedby={errors.subject ? "subject-error" : undefined}
+            >
+              <option value="">— Please select —</option>
+              <option value="general">General Inquiry</option>
+              <option value="account">Account Support</option>
+              <option value="billing">Billing & Pricing</option>
+              <option value="feedback">Feedback / Suggestions</option>
+              <option value="other">Other</option>
+            </select>
+            {errors.subject && (
+              <p
+                id="subject-error"
+                role="alert"
+                className="mt-1 text-sm text-red-500"
+              >
+                {errors.subject}
+              </p>
+            )}
+          </div>
+
           {/* Message Field */}
           <div>
             <label
               htmlFor="message"
               className="block text-sm font-semibold text-neutral-700 mb-2"
             >
-              Message <span className="text-red-500">*</span>
+              Your Message <span className="text-red-500">*</span>
             </label>
             <textarea
               id="message"
@@ -320,12 +386,16 @@ const ContactForm = () => {
                   ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                   : "border-neutral-300 focus:border-lime-500 focus:ring-lime-500"
               } focus:outline-none focus:ring-2 transition-colors resize-none`}
+              placeholder="Describe your enquiry in detail..."
               maxLength={2000}
               aria-invalid={errors.message ? "true" : undefined}
               aria-describedby={
                 errors.message ? "message-error message-count" : "message-count"
               }
             ></textarea>
+            <p className="mt-1 text-xs text-neutral-500">
+              Minimum 20 characters. Maximum 2000 characters.
+            </p>
             {errors.message && (
               <p
                 id="message-error"
@@ -341,6 +411,44 @@ const ContactForm = () => {
             >
               {formData.message.length}/2000
             </p>
+          </div>
+
+          {/* Consent Field */}
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="consent"
+              name="consent"
+              checked={formData.consent}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className="mt-2 h-4 w-4 rounded border-neutral-300 text-lime-600 focus:ring-lime-500"
+              aria-invalid={errors.consent ? "true" : undefined}
+              aria-describedby={errors.consent ? "consent-error" : undefined}
+            />
+            <div className="text-sm text-neutral-700">
+              <label htmlFor="consent" className="font-semibold">
+                I consent to SEBI-mandated KYC data collection and agree to the{" "}
+                <a
+                  href="/privacy-policy"
+                  className="text-lime-700 underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Privacy Policy
+                </a>
+                . <span className="text-red-500">*</span>
+              </label>
+              {errors.consent && (
+                <p
+                  id="consent-error"
+                  role="alert"
+                  className="mt-1 text-sm text-red-500"
+                >
+                  {errors.consent}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Submit Button */}

@@ -9,7 +9,9 @@ const CONTACT_RECEIVER_EMAIL =
   process.env.CONTACT_RECEIVER_EMAIL || process.env.MAIL_FROM;
 
 if (!CONTACT_RECEIVER_EMAIL) {
-  throw new Error('CONTACT_RECEIVER_EMAIL or MAIL_FROM environment variable is required');
+  throw new Error(
+    "CONTACT_RECEIVER_EMAIL or MAIL_FROM environment variable is required",
+  );
 }
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -55,10 +57,10 @@ export async function POST(request) {
           success: false,
           message: `Too many requests. Please wait ${rateLimitCheck.retryAfter} seconds before trying again.`,
         },
-        { 
+        {
           status: 429,
-          headers: { 'Retry-After': rateLimitCheck.retryAfter.toString() }
-        }
+          headers: { "Retry-After": rateLimitCheck.retryAfter.toString() },
+        },
       );
     }
 
@@ -72,7 +74,7 @@ export async function POST(request) {
     if (website) {
       return NextResponse.json(
         { success: true, message: "Message sent successfully" },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -101,7 +103,7 @@ export async function POST(request) {
           message: "Validation failed",
           errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -250,7 +252,7 @@ export async function POST(request) {
         success: true,
         message: "Message sent successfully",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Contact form submission error:", error);
@@ -259,7 +261,7 @@ export async function POST(request) {
         success: false,
         message: "Unable to send message right now. Please try again shortly.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

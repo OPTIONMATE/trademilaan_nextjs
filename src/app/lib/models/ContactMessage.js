@@ -76,7 +76,7 @@ const ContactMessageSchema = new mongoose.Schema(
   {
     timestamps: true,
     collection: "contact_messages",
-  }
+  },
 );
 
 ContactMessageSchema.index({ createdAt: -1 });

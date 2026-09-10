@@ -404,7 +404,7 @@ export default function CouponList() {
               <h3 className="text-lg font-bold text-gray-900">Delete Coupon?</h3>
               <p className="text-sm text-gray-600 mt-1">
                 Are you sure you want to delete coupon{" "}
-                <span className="font-semibold">"{deleteConfirm.couponCode}"</span>?
+                <span className="font-semibold">&quot;{deleteConfirm.couponCode}"</span>?
                 If this coupon has usage history, it will be archived instead of permanently deleted.
               </p>
             </div>

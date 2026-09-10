@@ -109,6 +109,8 @@ export async function middleware(request) {
   const csrfExemptRoutes = [
     "/api/auth/login",
     "/api/auth/register",
+    "/api/auth/verify-otp",
+    "/api/auth/resend-otp",
     "/api/auth/google",
     "/api/auth/admin/", // Admin auth endpoints (signup, OTP)
     "/api/contact",

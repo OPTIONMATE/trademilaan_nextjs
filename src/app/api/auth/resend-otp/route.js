@@ -70,10 +70,16 @@ export async function POST(req) {
     user.emailOtpExpiry = otpExpiry;
     await user.save();
 
-    // Send OTP email
-    sendOtpMail({ to: normalizedEmail, otp, username: user.username }).catch((err) => {
-      console.error("OTP resend failed (non-blocking):", err.message);
-    });
+    // Send OTP email — await so failures are reported
+    try {
+      await sendOtpMail({ to: normalizedEmail, otp, username: user.username });
+    } catch (err) {
+      console.error("OTP resend failed:", err.message);
+      return NextResponse.json(
+        { error: "Failed to resend verification email. Please try again." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
       message: "Verification code resent to your email",

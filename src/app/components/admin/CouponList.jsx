@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Edit2, Trash2, Eye, EyeOff, Plus, Loader, X } from "lucide-react";
 import CouponForm from "./CouponForm";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function CouponList() {
   const [coupons, setCoupons] = useState([]);
@@ -53,7 +54,7 @@ export default function CouponList() {
       setDeleting(normalizedCouponId);
       setError("");
       setSuccess("");
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/coupons/${encodeURIComponent(normalizedCouponId)}`,
         {
           method: "DELETE",
@@ -108,7 +109,7 @@ export default function CouponList() {
 
   const handleToggleStatus = async (coupon) => {
     try {
-      const response = await fetch(`/api/coupons/${coupon._id}/status`, {
+      const response = await fetchWithCsrf(`/api/coupons/${coupon._id}/status`, {
         method: "PATCH",
         credentials: "include",
       });

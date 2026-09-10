@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function BuyDetailsForm({ onSuccess, planData }) {
   const [form, setForm] = useState({
@@ -66,7 +67,7 @@ export default function BuyDetailsForm({ onSuccess, planData }) {
       return;
     }
 
-    const res = await fetch("/api/buy/start", {
+    const res = await fetchWithCsrf("/api/buy/start", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

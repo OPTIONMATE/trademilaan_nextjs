@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Plus, Loader } from "lucide-react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function PlanForm({ plan = null, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -96,7 +97,7 @@ export default function PlanForm({ plan = null, onSubmit, onCancel }) {
         displayOrder: formData.displayOrder === "" ? 0 : Number(formData.displayOrder),
       };
 
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         plan ? `/api/plans/${plan._id}` : "/api/plans",
         {
           method: plan ? "PUT" : "POST",

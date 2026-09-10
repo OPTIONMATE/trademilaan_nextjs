@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function DisclaimerGate() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function DisclaimerGate() {
   }, [loading, user, router]);
 
   const accept = async () => {
-    await fetch("/api/user/accept-disclaimer", { method: "POST" });
+    await fetchWithCsrf("/api/user/accept-disclaimer", { method: "POST" });
     await fetchMe();
     router.push("/");
   };

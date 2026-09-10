@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+
 import { Download, Loader2 } from "lucide-react";
+
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
+
 
 export default function SignedAgreementsSection({ data }) {
   const [searchEmail, setSearchEmail] = useState("");
@@ -21,7 +25,7 @@ export default function SignedAgreementsSection({ data }) {
     setDownloadError(null);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         "/api/admin/signed-agreements/download-pdf",
         {
           method: "POST",

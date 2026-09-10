@@ -1,20 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import { normalizeDob, normalizeGender } from "@/app/lib/profileFields";
 
 export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
   const { user, fetchMe } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || "",
-    phone: user?.phone || "",
-    dob: user?.dob || "",
-    gender: user?.gender || "",
-    state: user?.state || "",
-    panNumber: user?.panNumber || "",
+    fullName: "",
+    phone: "",
+    dob: "",
+    gender: "",
+    state: "",
+    panNumber: "",
   });
+
+  const buildFormFromUser = (profile) => ({
+    fullName: profile?.fullName || "",
+    phone: profile?.phone || "",
+    dob: normalizeDob(profile?.dob) || "",
+    gender: normalizeGender(profile?.gender) || "",
+    state: profile?.state || "",
+    panNumber: profile?.panNumber || "",
+  });
+
+  // Re-sync the form each time the modal is opened so it always starts from the
+  // values actually persisted on the profile (previously the state was captured
+  // on first mount only, so re-opening showed stale/empty fields).
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(buildFormFromUser(user));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +66,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
     }
 
     try {
-      const response = await fetch("/api/user/update-profile", {
+      const response = await fetchWithCsrf("/api/user/update-profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

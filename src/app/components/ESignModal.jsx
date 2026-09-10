@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 const SignaturePad = dynamic(() => import("react-signature-canvas"), {
   ssr: false,
@@ -49,7 +50,7 @@ export default function ESignModal({ onClose, onSaved, pdfUrl }) {
     if (tab === "upload" && uploadFile) {
       const formData = new FormData();
       formData.append("file", uploadFile);
-      const res = await fetch("/api/signature/upload", {
+      const res = await fetchWithCsrf("/api/signature/upload", {
         method: "POST",
         body: formData,
       });

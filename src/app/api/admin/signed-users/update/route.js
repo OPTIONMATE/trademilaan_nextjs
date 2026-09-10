@@ -3,9 +3,11 @@ import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import SignedAgreement from "@/app/lib/models/SignedAgreement";
 import mongoose from "mongoose";
+import { requireAdmin } from "@/app/lib/authServer";
 
 export async function PATCH(req) {
   try {
+    await requireAdmin();
     await connectDB();
 
     const body = await req.json();
@@ -73,6 +75,12 @@ export async function PATCH(req) {
       },
     });
   } catch (error) {
+    if (error.statusCode === 401) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (error.statusCode === 403) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     console.error("Error updating user status:", error);
     return NextResponse.json(
       { error: "Failed to update user status", details: error.message },

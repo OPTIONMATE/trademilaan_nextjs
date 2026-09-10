@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Protected from "../components/Protected";
 import { useAuth } from "../context/AuthContext";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function RiskAssessmentPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function RiskAssessmentPage() {
     setFormStatus("");
 
     try {
-      const response = await fetch("/api/risk-profile/save", {
+      const response = await fetchWithCsrf("/api/risk-profile/save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

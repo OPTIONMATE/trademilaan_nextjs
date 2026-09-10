@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Download, RefreshCw, Search, Check, X } from "lucide-react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 const formatDate = (value) => {
   if (!value) return "N/A";
@@ -75,7 +76,7 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
       const updatePayload = {};
       updatePayload[statusType] = value;
 
-      const response = await fetch("/api/admin/signed-users/update", {
+      const response = await fetchWithCsrf("/api/admin/signed-users/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, ...updatePayload }),
@@ -106,7 +107,7 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
     const agreementId = confirmSendModal.agreementId;
     try {
       setSendingAgreementId(agreementId);
-      const res = await fetch("/api/admin/signed-users/send-agreement", {
+      const res = await fetchWithCsrf("/api/admin/signed-users/send-agreement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agreementId }),

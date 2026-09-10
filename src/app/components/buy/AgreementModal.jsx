@@ -5,6 +5,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import ESignModal from "@/app/components/ESignModal";
 import PaymentForm from "@/app/components/buy/PaymentForm";
 import ServiceAgreement from "@/components/ServiceAgreement";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function AgreementModal({
   onClose,
@@ -65,7 +66,7 @@ export default function AgreementModal({
       setCapturedAgreementHtml(htmlContent);
 
       // Accept agreement
-      const res = await fetch("/api/agreement/accept", { method: "POST" });
+      const res = await fetchWithCsrf("/api/agreement/accept", { method: "POST" });
       if (!res.ok) throw new Error("Failed to accept agreement");
       setShowSign(true);
     } catch (err) {
@@ -156,7 +157,7 @@ export default function AgreementModal({
       setSigningData(signedData);
 
       // Send to backend for secure PDF generation and storage
-      const res = await fetch("/api/agreement/sign-and-store", {
+      const res = await fetchWithCsrf("/api/agreement/sign-and-store", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(signingPayload),

@@ -13,7 +13,7 @@ const resolveMessageId = async (params) => {
 
 export async function DELETE(req, { params }) {
   try {
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import connectDB from "@/app/lib/db";
 import ComplaintStats from "@/app/lib/models/ComplaintStats";
+import { requireAdmin } from "@/app/lib/authServer";
 
 const DEFAULT_STATS = {
   reportingMonth: "April 2026",
@@ -91,24 +92,58 @@ async function getOrCreateStats() {
 }
 
 export async function GET() {
-  const stats = await getOrCreateStats();
-  return new Response(JSON.stringify(stats), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+  try {
+    await requireAdmin();
+    const stats = await getOrCreateStats();
+    return new Response(JSON.stringify(stats), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (error) {
+    if (error.statusCode === 401) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (error.statusCode === 403) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw error;
+  }
 }
 
 export async function POST(request) {
-  const body = await request.json();
-  await connectDB();
-  const updated = await ComplaintStats.findOneAndUpdate({}, body, {
-    new: true,
-    upsert: true,
-    setDefaultsOnInsert: true,
-  }).lean();
+  try {
+    await requireAdmin();
+    const body = await request.json();
+    await connectDB();
+    const updated = await ComplaintStats.findOneAndUpdate({}, body, {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    }).lean();
 
-  return new Response(JSON.stringify(updated), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+    return new Response(JSON.stringify(updated), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (error) {
+    if (error.statusCode === 401) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (error.statusCode === 403) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw error;
+  }
 }

@@ -5,7 +5,7 @@ import { verifyAuth, isAdminUser } from "@/app/lib/auth/tokenUtils";
 
 export async function GET(req) {
   try {
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(

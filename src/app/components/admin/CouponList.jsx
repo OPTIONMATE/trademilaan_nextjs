@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit2, Trash2, Eye, EyeOff, Plus, Loader } from "lucide-react";
+import { Edit2, Trash2, Eye, EyeOff, Plus, Loader, X } from "lucide-react";
 import CouponForm from "./CouponForm";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function CouponList() {
   const [coupons, setCoupons] = useState([]);
@@ -53,7 +54,7 @@ export default function CouponList() {
       setDeleting(normalizedCouponId);
       setError("");
       setSuccess("");
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/coupons/${encodeURIComponent(normalizedCouponId)}`,
         {
           method: "DELETE",
@@ -108,7 +109,7 @@ export default function CouponList() {
 
   const handleToggleStatus = async (coupon) => {
     try {
-      const response = await fetch(`/api/coupons/${coupon._id}/status`, {
+      const response = await fetchWithCsrf(`/api/coupons/${coupon._id}/status`, {
         method: "PATCH",
         credentials: "include",
       });
@@ -215,7 +216,7 @@ export default function CouponList() {
             className="text-green-700 hover:text-green-900"
             aria-label="Dismiss success message"
           >
-            ✕
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -403,7 +404,7 @@ export default function CouponList() {
               <h3 className="text-lg font-bold text-gray-900">Delete Coupon?</h3>
               <p className="text-sm text-gray-600 mt-1">
                 Are you sure you want to delete coupon{" "}
-                <span className="font-semibold">"{deleteConfirm.couponCode}"</span>?
+                <span className="font-semibold">&quot;{deleteConfirm.couponCode}"</span>?
                 If this coupon has usage history, it will be archived instead of permanently deleted.
               </p>
             </div>

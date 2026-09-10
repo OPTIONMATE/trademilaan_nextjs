@@ -37,7 +37,7 @@ export async function GET(req, { params }) {
     await connectDB();
 
     // Extract user from token
-    const { isValid, user } = verifyAuth(req);
+    const { isValid, user } = await verifyAuth(req);
 
     // Build query based on user role
     let query = { _id: id };
@@ -87,7 +87,7 @@ export async function PUT(req, { params }) {
     const id = await resolveCouponId(params);
 
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(
@@ -198,7 +198,7 @@ export async function DELETE(req, { params }) {
     const id = await resolveCouponId(params);
 
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(

@@ -284,6 +284,10 @@ export function resetLoginAttempts(email) {
   resetAttempts(`login_${email}`);
 }
 
+// NOTE: OTP rate limiting functions already exist below (lines 255-270):
+//   incrementOTPAttempt(email), isOTPBlocked(email), resetOTPAttempts(email)
+// Do not duplicate them here.
+
 /**
  * Generate cryptographically secure OTP
  * Returns 6-digit OTP as string

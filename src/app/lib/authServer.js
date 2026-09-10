@@ -1,4 +1,6 @@
 import { verifyToken } from "@/app/lib/jwt";
+import connectDB from "@/app/lib/db";
+import User from "@/app/lib/models/User";
 import { cookies } from "next/headers";
 
 /**
@@ -55,12 +57,17 @@ export async function requireAdmin() {
     error.statusCode = 401;
     throw error;
   }
-  if (user.role !== "admin") {
+
+  await connectDB();
+  const currentUser = await User.findById(user.userId).select("role").lean();
+
+  if (!currentUser || currentUser.role !== "admin") {
     const error = new Error("Forbidden - Admin access required");
     error.statusCode = 403;
     throw error;
   }
-  return user;
+
+  return { ...user, role: currentUser.role };
 }
 
 /**

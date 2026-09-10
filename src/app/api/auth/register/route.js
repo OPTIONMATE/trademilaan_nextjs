@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
-import { signToken } from "@/app/lib/jwt";
-import { sendTermsAndConditionsMail } from "@/app/lib/mailer";
+import { generateSecureOTP } from "@/app/lib/validators";
+import { sendOtpMail } from "@/app/lib/mailer";
 import { isValidEmail, sanitizeString } from "@/app/lib/validators";
-import { serializeAuthUser } from "@/app/lib/serializers";
-import { setSecureCookie } from "@/app/lib/apiHelpers";
 
+// Step 1 of registration: validate inputs, create unverified user, send OTP.
+// The user is NOT logged in yet — they must verify OTP first.
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -46,11 +46,12 @@ export async function POST(req) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase();
     await connectDB();
 
-    // Check if user exists
-    const exists = await User.findOne({ email });
-    if (exists) {
+    // Check if a VERIFIED user already exists with this email
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser && existingUser.emailVerified) {
       return NextResponse.json(
         { error: "Email already registered" },
         { status: 400 }
@@ -60,31 +61,42 @@ export async function POST(req) {
     // Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = await User.create({
-      email,
-      password: hash,
-      username: sanitizedUsername,
-      role: "user",
-      emailVerified: true,
+    // Generate OTP (6-digit, expires in 10 minutes)
+    const otp = generateSecureOTP();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    if (existingUser) {
+      // Unverified user re-registering — update their details and OTP
+      existingUser.password = hash;
+      existingUser.username = sanitizedUsername;
+      existingUser.emailOtp = otpHash;
+      existingUser.emailOtpExpiry = otpExpiry;
+      await existingUser.save();
+    } else {
+      // Create new unverified user
+      await User.create({
+        email: normalizedEmail,
+        password: hash,
+        username: sanitizedUsername,
+        role: "user",
+        emailVerified: false,
+        emailOtp: otpHash,
+        emailOtpExpiry: otpExpiry,
+      });
+    }
+
+    // Send OTP email (non-blocking — failure shouldn't prevent registration)
+    sendOtpMail({ to: normalizedEmail, otp, username: sanitizedUsername }).catch((err) => {
+      console.error("OTP email sending failed (non-blocking):", err.message);
     });
 
-    // Send confirmation email (non-blocking)
-    sendTermsAndConditionsMail(email).catch((err) => {
-      console.error("Email sending failed (non-blocking):", err.message);
+    // Return step indicator — frontend switches to OTP entry
+    return NextResponse.json({
+      step: "otp",
+      email: normalizedEmail,
+      message: "Verification code sent to your email",
     });
-
-    // Generate token
-    const token = signToken(user);
-
-    // Return safe user data
-    const res = NextResponse.json({
-      user: serializeAuthUser(user),
-    });
-
-    // Set secure cookie
-    setSecureCookie(res, "token", token);
-    return res;
   } catch (error) {
     console.error("Register error:", error.message);
     return NextResponse.json(

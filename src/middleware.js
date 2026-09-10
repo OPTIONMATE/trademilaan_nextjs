@@ -90,11 +90,16 @@ export async function middleware(request) {
 
   // 2. Ensure CSRF token exists in session
   // (Will be set as cookie for client to use)
+  //
+  // Re-issued on every matched request, reusing the existing value when present.
+  // Browsers never report the HttpOnly flag back in the Cookie header, so a
+  // legacy HttpOnly CSRF cookie cannot be detected any other way — re-issuing it
+  // in place is what upgrades it to a JS-readable (httpOnly:false) cookie. The
+  // VALUE is preserved so in-flight state-changing requests whose header was
+  // built from the existing token keep matching; only a client with no cookie at
+  // all gets a freshly generated token.
   const csrfToken = getCSRFToken(request);
-  if (!csrfToken) {
-    // Initialize CSRF token for new sessions
-    setCSRFCookie(response);
-  }
+  setCSRFCookie(response, csrfToken);
 
   // 3. CSRF protection for state-changing requests
   const safeMethods = ["GET", "HEAD", "OPTIONS"];
@@ -104,19 +109,13 @@ export async function middleware(request) {
   const csrfExemptRoutes = [
     "/api/auth/login",
     "/api/auth/register",
-    "/api/auth/logout",
+    "/api/auth/verify-otp",
+    "/api/auth/resend-otp",
     "/api/auth/google",
     "/api/auth/admin/", // Admin auth endpoints (signup, OTP)
     "/api/contact",
-    "/api/user/accept-disclaimer",
     "/api/payment/verify", // Razorpay webhook doesn't have CSRF token
-    "/api/buy/", // Buy endpoints use JWT authentication
-    "/api/agreement/", // Agreement endpoints use JWT authentication
-    "/api/user/", // User endpoints use JWT authentication
-    "/api/signature/", // Signature endpoints use JWT authentication
-    "/api/risk-profile/", // Risk profile endpoints use JWT authentication
     "/api/payment/order", // Payment order endpoint uses JWT authentication
-    "/api/admin/", // Admin endpoints use JWT authentication
   ];
 
   const isExempt = csrfExemptRoutes.some((route) => pathname.startsWith(route));

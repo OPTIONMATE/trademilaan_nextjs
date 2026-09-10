@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Download } from "lucide-react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function InvoiceSection({ data }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,7 +41,7 @@ export default function InvoiceSection({ data }) {
     setDownloadError(null);
 
     try {
-      const response = await fetch("/api/admin/invoices/download-pdf", {
+      const response = await fetchWithCsrf("/api/admin/invoices/download-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId }),

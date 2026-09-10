@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { cn } from "@/app/lib/utils";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function LogoutButton({ className = "", label = "Logout", onLoggedOut }) {
   const router = useRouter();
@@ -9,7 +10,7 @@ export default function LogoutButton({ className = "", label = "Logout", onLogge
 
   const logout = async () => {
     setLoggingOut(true);
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetchWithCsrf("/api/auth/logout", { method: "POST" });
     setUser(null);
     if (onLoggedOut) onLoggedOut();
     

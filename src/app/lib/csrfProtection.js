@@ -40,14 +40,23 @@ export function generateCSRFToken() {
 }
 
 /**
- * Set CSRF token as HttpOnly cookie
- * Should be called once per session
+ * Set CSRF token as a readable double-submit cookie
+ *
+ * Reuses `existingToken` when one is supplied so an already-issued cookie can be
+ * re-issued in place (it needs to be, in order to upgrade a legacy HttpOnly
+ * cookie into a JS-readable one) WITHOUT rotating the token value. Rotating the
+ * value here would invalidate the header of any state-changing request that was
+ * already prepared from the previous value.
+ *
+ * @param {Response} response - Next.js response to attach the cookie to
+ * @param {string} [existingToken] - token already issued to this client, if any
+ * @returns {string} the token value that is now set on the response
  */
-export function setCSRFCookie(response) {
-  const token = generateCSRFToken();
+export function setCSRFCookie(response, existingToken) {
+  const token = existingToken || generateCSRFToken();
   
   response.cookies.set(CSRF_COOKIE_NAME, token, {
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     maxAge: 24 * 60 * 60, // 24 hours
@@ -102,7 +111,7 @@ export function getCSRFToken(request) {
  */
 export function clearCSRFToken(response) {
   response.cookies.set(CSRF_COOKIE_NAME, '', {
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     maxAge: 0,

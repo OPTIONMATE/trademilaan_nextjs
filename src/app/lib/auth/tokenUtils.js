@@ -4,13 +4,15 @@
  */
 
 import { verifyToken } from "../jwt";
+import connectDB from "../db";
+import User from "../models/User";
 
 /**
  * Extract user from JWT cookie
  * @param {object} req - Next.js request object
  * @returns {object|null} user object or null if invalid
  */
-export const getUserFromToken = (req) => {
+export const getUserFromToken = async (req) => {
   try {
     const token = req.cookies.get("token")?.value;
     if (!token) {
@@ -18,7 +20,11 @@ export const getUserFromToken = (req) => {
     }
 
     const decoded = verifyToken(token);
-    return decoded; // { id, email, role }
+    await connectDB();
+    const currentUser = await User.findById(decoded.id).select("role email").lean();
+    if (!currentUser) return null;
+
+    return { ...decoded, role: currentUser.role, email: currentUser.email };
   } catch (error) {
     console.error("Token verification error:", error);
     return null;
@@ -30,8 +36,8 @@ export const getUserFromToken = (req) => {
  * @param {object} req - Next.js request object
  * @returns {object} { isValid: boolean, user: object|null, error: string|null }
  */
-export const verifyAuth = (req) => {
-  const user = getUserFromToken(req);
+export const verifyAuth = async (req) => {
+  const user = await getUserFromToken(req);
   if (!user) {
     return {
       isValid: false,

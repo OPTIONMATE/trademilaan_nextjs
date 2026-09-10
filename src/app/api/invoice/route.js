@@ -45,7 +45,7 @@ export async function POST(request) {
 export async function GET(request) {
   try {
     // ✅ SECURITY: Require authentication to view invoices
-    await requireAuth();
+    const user = await requireAuth();
 
     await connectDB();
     const mongoose = (await import("mongoose")).default;
@@ -58,10 +58,18 @@ export async function GET(request) {
           amount: Number,
           startDate: Date,
           endDate: Date,
+          email: String,
           createdAt: { type: Date, default: Date.now },
         }),
       );
-    const invoices = await Invoice.find().lean();
+    const normalizedEmail = String(user.email || "").trim().toLowerCase();
+    const invoiceQuery =
+      user.role === "admin"
+        ? {}
+        : normalizedEmail
+          ? { email: normalizedEmail }
+          : { _id: null };
+    const invoices = await Invoice.find(invoiceQuery).lean();
     return NextResponse.json({ invoices });
   } catch (err) {
     if (err.statusCode === 401) {

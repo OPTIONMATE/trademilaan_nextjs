@@ -1,240 +1,310 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../context/AuthContext";
-import UsersSection from "../components/admin/UsersSection";
-import SignedAgreementsSection from "../components/admin/SignedAgreementsSection";
-import SignedUsersSection from "../components/admin/SignedUsersSection";
-import InvoiceSection from "../components/admin/InvoiceSection";
-import RiskProfilesSection from "../components/admin/RiskProfilesSection";
-import AnalyticsSection from "../components/admin/AnalyticsSection";
-import PlansSection from "../components/admin/PlansSection";
-import SubscriptionsSection from "../components/admin/SubscriptionsSection";
-import PaymentAuditSection from "../components/admin/PaymentAuditSection";
-import CouponSection from "../components/admin/CouponSection";
-import ContactMessagesSection from "../components/admin/ContactMessagesSection";
-import ComplaintStatsSection from "../components/admin/ComplaintStatsSection";
+import Link from "next/link";
+import {
+  Users,
+  UserPlus,
+  BadgeCheck,
+  CalendarClock,
+  IndianRupee,
+  TrendingUp,
+  Wallet,
+  RefreshCcw,
+  MessageSquare,
+  RefreshCw,
+} from "lucide-react";
+import AdminPageHeader from "../components/admin/ui/AdminPageHeader";
+import AdminStatCard from "../components/admin/ui/AdminStatCard";
+import AdminCard from "../components/admin/ui/AdminCard";
+import AdminButton from "../components/admin/ui/AdminButton";
+import AdminBadge from "../components/admin/ui/AdminBadge";
+import AdminTable from "../components/admin/ui/AdminTable";
+import AdminErrorState from "../components/admin/ui/AdminErrorState";
+import {
+  AdminSkeletonGrid,
+  AdminSkeletonTable,
+} from "../components/admin/ui/AdminSkeleton";
 
-const COLLECTIONS = [
-  { key: "users", label: "Users", icon: "👥" },
-  { key: "signedAgreements", label: "Signed Agreements", icon: "✍️" },
-  { key: "signedUsers", label: "Signed Users", icon: "📋" },
-  { key: "riskprofiles", label: "Risk Profiles", icon: "📊" },
-  { key: "invoices", label: "Invoices", icon: "📄" },
-  { key: "complaintStats", label: "Complaint Table", icon: "🧾" },
-  { key: "analytics", label: "Admin Analytics", icon: "📈" },
-  { key: "plans", label: "Create Plan", icon: "🎯" },
-  { key: "coupons", label: "Coupons", icon: "🎟️" },
-  { key: "contactMessages", label: "Contact Messages", icon: "📬" },
-  { key: "subscriptions", label: "My Subscriptions", icon: "🔄" },
-  { key: "paymentAudit", label: "Admin Audit History", icon: "🔍" },
-];
+const formatINR = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+// Analytics amounts are stored in paise (matches the existing Analytics display).
+const formatINRFromPaise = (value) => formatINR(Number(value || 0) / 100);
 
-export default function AdminDashboardPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  // Initialize all state hooks at the top (before any conditional returns)
-  const [activeTab, setActiveTab] = useState("users");
-  const [loadingData, setLoadingData] = useState(false);
-  const [contactUnreadCount, setContactUnreadCount] = useState(0);
-
-  const [data, setData] = useState({
-    users: [],
-    signedAgreements: [],
-    signedUsers: [],
-    riskprofiles: [],
-    invoices: [],
-    complaintStats: null,
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
+};
 
-  const fetchAllData = async () => {
-    setLoadingData(true);
+export default function AdminOverviewPage() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const safeFetchJson = async (url, fallback = {}) => {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) {
-            throw new Error(`Request failed: ${url} (${res.status})`);
-          }
-          return await res.json();
-        } catch (error) {
-          console.error(`Error fetching ${url}:`, error);
-          return fallback;
-        }
-      };
-
-      const [
-        usersRes,
-        signedAgreementsRes,
-        signedUsersRes,
-        riskProfilesRes,
-        invoicesRes,
-        contactMessagesRes,
-        complaintStatsRes,
-      ] = await Promise.all([
-        safeFetchJson("/api/admin/users", { users: [] }),
-        safeFetchJson("/api/admin/signed-agreements", { signedAgreements: [] }),
-        safeFetchJson("/api/admin/signed-users", { signedUsers: [] }),
-        safeFetchJson("/api/admin/riskprofiles", { riskprofiles: [] }),
-        safeFetchJson("/api/admin/invoices", { invoices: [] }),
-        safeFetchJson("/api/admin/contact-messages?limit=1", {
-          stats: { unreadCount: 0 },
-        }),
-        safeFetchJson("/api/admin/complaint-stats", null),
+      // Overview loads ONLY the small datasets it needs.
+      const [analyticsRes, messagesRes] = await Promise.all([
+        fetch("/api/admin/analytics"),
+        fetch("/api/admin/contact-messages?limit=1"),
       ]);
+
+      const [analytics, messages] = await Promise.all([
+        analyticsRes.ok ? analyticsRes.json() : null,
+        messagesRes.ok ? messagesRes.json() : null,
+      ]);
+
+      if (!analytics?.success) {
+        throw new Error("Failed to load overview analytics");
+      }
+
       setData({
-        users: usersRes?.users || [],
-        signedAgreements: signedAgreementsRes?.signedAgreements || [],
-        signedUsers: signedUsersRes?.signedUsers || [],
-        riskprofiles: riskProfilesRes?.riskprofiles || [],
-        invoices: invoicesRes?.invoices || [],
-        complaintStats: complaintStatsRes || null,
+        summary: analytics.summary || {},
+        recentLogins: analytics.recent_logins || [],
+        monthlyRevenue: analytics.monthly_revenue_details || [],
+        unreadCount: messages?.stats?.unreadCount || 0,
       });
-      setContactUnreadCount(contactMessagesRes?.stats?.unreadCount || 0);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("Overview load error:", err);
+      setError(err.message || "Unable to load overview");
+    } finally {
+      setLoading(false);
     }
-    setLoadingData(false);
   };
 
-  // All hooks must be declared before any conditional returns
+  // Load once on mount (Overview only needs its own data).
   useEffect(() => {
-    // Redirect if not authenticated or not admin
-    if (!loading && (!user || user.role !== "admin")) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    // Fetch data only if user is authenticated and is admin
-    if (!loading && user && user.role === "admin") {
-      fetchAllData();
-    }
-  }, [loading, user]);
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if not admin
-  if (!user || user.role !== "admin") {
-    return null;
-  }
-
-  const currentCollection = COLLECTIONS.find((c) => c.key === activeTab);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <main className="p-6 mt-24">
-      <div className="flex gap-6">
-        {/* Sidebar */}
-        <aside className="w-60 shrink-0 border rounded-lg p-4 bg-white sticky top-28 h-fit">
-          <h2 className="font-bold text-lg mb-4 text-neutral-900">
-            Admin Menu
-          </h2>
-          <nav className="flex flex-col gap-1">
-            {COLLECTIONS.map((col) => (
-              <button
-                key={col.key}
-                type="button"
-                onClick={() => setActiveTab(col.key)}
-                className={`text-left p-3 rounded-lg font-medium transition flex items-center gap-2 cursor-pointer ${
-                  activeTab === col.key
-                    ? "bg-[#9BE749] text-black"
-                    : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900"
-                }`}
-              >
-                <span>{col.label}</span>
-                {col.key === "contactMessages" && contactUnreadCount > 0 && (
-                  <span className="ml-auto inline-flex min-w-6 h-6 items-center justify-center rounded-full bg-red-600 px-2 text-xs font-bold text-white">
-                    {contactUnreadCount > 99 ? "99+" : contactUnreadCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </aside>
+    <div>
+      <AdminPageHeader
+        title="Admin Overview"
+        description="A high-level snapshot of users, revenue, subscriptions and messages."
+        actions={
+          <AdminButton variant="secondary" size="sm" onClick={load}>
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Refresh
+          </AdminButton>
+        }
+      />
+{loading && (
+        <div className="space-y-6">
+          <AdminSkeletonGrid cards={8} />
+          <AdminSkeletonTable rows={6} columns={6} />
+        </div>
+      )}
 
-        {/* Main Content */}
-        <section className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">{currentCollection?.label}</h1>
-            {loadingData &&
-              activeTab !== "analytics" &&
-              activeTab !== "plans" &&
-              activeTab !== "subscriptions" &&
-              activeTab !== "paymentAudit" &&
-              activeTab !== "contactMessages" && (
-                <div className="text-sm text-neutral-500">Loading...</div>
-              )}
-          </div>
+      {!loading && error && (
+        <AdminErrorState
+          title="Unable to load overview"
+          description="Something went wrong while loading this data."
+          onRetry={load}
+        />
+      )}
 
-          {/* Conditional rendering of sections */}
-          {activeTab === "users" &&
-            (loadingData ? (
-              <p className="text-sm text-neutral-500">Loading data...</p>
-            ) : (
-              <UsersSection data={data.users} onRefresh={fetchAllData} />
-            ))}
-
-          {activeTab === "signedAgreements" &&
-            (loadingData ? (
-              <p className="text-sm text-neutral-500">Loading data...</p>
-            ) : (
-              <SignedAgreementsSection data={data.signedAgreements} />
-            ))}
-
-          {activeTab === "signedUsers" &&
-            (loadingData ? (
-              <p className="text-sm text-neutral-500">Loading data...</p>
-            ) : (
-              <SignedUsersSection
-                data={data.signedUsers}
-                onRefresh={fetchAllData}
-              />
-            ))}
-
-          {activeTab === "riskprofiles" &&
-            (loadingData ? (
-              <p className="text-sm text-neutral-500">Loading data...</p>
-            ) : (
-              <RiskProfilesSection data={data.riskprofiles} />
-            ))}
-
-          {activeTab === "invoices" &&
-            (loadingData ? (
-              <p className="text-sm text-neutral-500">Loading data...</p>
-            ) : (
-              <InvoiceSection data={data.invoices} />
-            ))}
-
-          {activeTab === "analytics" && <AnalyticsSection />}
-
-          {activeTab === "plans" && <PlansSection />}
-
-          {activeTab === "coupons" && <CouponSection />}
-
-          {activeTab === "contactMessages" && (
-            <ContactMessagesSection
-              onUnreadCountChange={setContactUnreadCount}
-            />
+      {!loading && !error && data && (
+        <div className="space-y-6">
+          {/* Unread messages callout */}
+          {data.unreadCount > 0 && (
+            <Link
+              href="/admin-dashboard/messages"
+              className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 transition hover:border-red-300 hover:bg-red-100"
+            >
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+                <MessageSquare className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="text-sm font-medium text-red-800">
+                You have {data.unreadCount > 99 ? "99+" : data.unreadCount}{" "}
+                unread message{data.unreadCount === 1 ? "" : "s"} from the
+                contact form.
+              </span>
+              <span className="ml-auto shrink-0 text-sm font-semibold text-red-700">
+                View →
+              </span>
+            </Link>
           )}
 
-          {activeTab === "subscriptions" && <SubscriptionsSection />}
+          {/* Key metrics */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <AdminStatCard
+              label="Total Users"
+              value={data.summary.total_users ?? 0}
+              sub="All registered accounts"
+              icon={Users}
+            />
+            <AdminStatCard
+              label="Signups This Month"
+              value={data.summary.new_signups_this_month ?? 0}
+              sub={`${data.summary.new_signups_today ?? 0} today`}
+              icon={UserPlus}
+              tone="lime"
+            />
+            <AdminStatCard
+              label="Verified Users"
+              value={data.summary.verified_users ?? 0}
+              sub="Email verified"
+              icon={BadgeCheck}
+              tone="success"
+            />
+            <AdminStatCard
+              label="Active Subscriptions"
+              value={data.summary.active_subscriptions ?? 0}
+              sub="Not yet expired"
+              icon={CalendarClock}
+              tone="purple"
+            />
+            <AdminStatCard
+              label="Total Revenue"
+              value={formatINRFromPaise(data.summary.total_revenue)}
+              sub="All time"
+              icon={IndianRupee}
+              tone="success"
+            />
+            <AdminStatCard
+              label="Revenue This Month"
+              value={formatINRFromPaise(data.summary.this_month_revenue)}
+              sub="Current calendar month"
+              icon={TrendingUp}
+              tone="lime"
+            />
+            <AdminStatCard
+              label="Paid Users"
+              value={data.summary.paid_users_count ?? 0}
+              sub="Unique customers"
+              icon={Wallet}
+              tone="purple"
+            />
+            <AdminStatCard
+              label="Renewals"
+              value={data.summary.renewals ?? 0}
+              sub="Repeat purchases"
+              icon={RefreshCcw}
+              tone="warning"
+            />
+          </div>
+        {/* Recent logins */}
+          <AdminCard
+            title="Recent logins"
+            description="Latest account activity across the platform"
+          >
+            {data.recentLogins.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-500">
+                No recent login activity.
+              </p>
+            ) : (
+              <AdminTable
+                columns={[
+                  {
+                    key: "name",
+                    header: "Name",
+                    render: (row) => (
+                      <span className="font-medium text-neutral-900">
+                        {row.name || "Unknown"}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "email",
+                    header: "Email",
+                    render: (row) => (
+                      <span className="text-neutral-600">{row.email}</span>
+                    ),
+                  },
+                  {
+                    key: "method",
+                    header: "Method",
+                    render: (row) => (
+                      <AdminBadge tone="info">{row.method}</AdminBadge>
+                    ),
+                  },
+                  {
+                    key: "logged_in_at",
+                    header: "Logged in at",
+                    render: (row) => (
+                      <span className="text-neutral-600">
+                        {formatDateTime(row.logged_in_at)}
+                      </span>
+                    ),
+                  },
+                ]}
+                rows={data.recentLogins.slice(0, 8)}
+                minWidth={560}
+              />
+            )}
+          </AdminCard>
 
-          {activeTab === "paymentAudit" && <PaymentAuditSection />}
-          {activeTab === "complaintStats" && <ComplaintStatsSection />}
-        </section>
-      </div>
-    </main>
+          {/* Monthly revenue */}
+          <AdminCard
+            title="Revenue by month"
+            description="Last 6 months of payments"
+          >
+            {data.monthlyRevenue.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-500">
+                No revenue data available yet.
+              </p>
+            ) : (
+              <AdminTable
+                columns={[
+                  {
+                    key: "month",
+                    header: "Month",
+                    render: (row) => (
+                      <span className="font-medium text-neutral-900">
+                        {row.month}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "revenue",
+                    header: "Revenue",
+                    align: "right",
+                    render: (row) => (
+                      <span className="font-semibold text-neutral-900">
+                        {formatINR(row.revenue)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "transactions",
+                    header: "Transactions",
+                    align: "right",
+                    render: (row) => (
+                      <span className="text-neutral-600">
+                        {row.transactions ?? 0}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "unique_users",
+                    header: "Unique users",
+                    align: "right",
+                    render: (row) => (
+                      <span className="text-neutral-600">
+                        {row.unique_users ?? 0}
+                      </span>
+                    ),
+                  },
+                ]}
+                rows={data.monthlyRevenue}
+                minWidth={520}
+              />
+            )}
+          </AdminCard>
+        </div>
+      )}
+    </div>
   );
 }

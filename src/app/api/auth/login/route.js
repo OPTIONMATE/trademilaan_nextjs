@@ -75,13 +75,24 @@ export async function POST(req) {
       );
     }
 
+    // ✅ SECURITY: Reject unverified users — they must verify OTP first
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        {
+          error: "Please verify your email before logging in",
+          needsVerification: true,
+          email: normalizedEmail,
+        },
+        { status: 403 }
+      );
+    }
+
     // ✅ SECURITY: Reset login attempts on successful login
     resetLoginAttempts(normalizedEmail);
 
     // Update login tracking
     user.lastLoginAt = new Date();
     user.authProvider = "email";
-    user.emailVerified = true;
     await user.save();
 
     // Generate token

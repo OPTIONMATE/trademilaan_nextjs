@@ -13,6 +13,7 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 const formatDateTime = (value) => {
   if (!value) return "N/A";
@@ -159,7 +160,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
   const handleToggleRead = async (messageId, isRead) => {
     try {
       setActionLoading(messageId);
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/admin/contact-messages/${encodeURIComponent(messageId)}/read`,
         {
           method: "PATCH",
@@ -190,7 +191,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
   const handleStatusChange = async (messageId, newStatus) => {
     try {
       setActionLoading(messageId);
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/admin/contact-messages/${encodeURIComponent(messageId)}/status`,
         {
           method: "PATCH",
@@ -221,7 +222,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
   const handlePriorityChange = async (messageId, newPriority) => {
     try {
       setActionLoading(messageId);
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/admin/contact-messages/${encodeURIComponent(messageId)}/priority`,
         {
           method: "PATCH",
@@ -252,7 +253,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
   const handleAssignChange = async (messageId, newAssignee) => {
     try {
       setActionLoading(messageId);
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/admin/contact-messages/${encodeURIComponent(messageId)}/assign`,
         {
           method: "PATCH",
@@ -283,7 +284,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
   const handleNotesChange = async (messageId, newNotes) => {
     try {
       setActionLoading(messageId);
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/admin/contact-messages/${encodeURIComponent(messageId)}/notes`,
         {
           method: "PATCH",
@@ -318,7 +319,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
 
     try {
       setActionLoading(messageId);
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         `/api/admin/contact-messages/${encodeURIComponent(messageId)}`,
         { method: "DELETE" }
       );

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit2, Trash2, Eye, EyeOff, Plus, Loader } from "lucide-react";
+import { Edit2, Trash2, Eye, EyeOff, Plus, Loader, X } from "lucide-react";
 import PlanForm from "./PlanForm";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function PlanList() {
   const [plans, setPlans] = useState([]);
@@ -53,7 +54,7 @@ export default function PlanList() {
       setError("");
       setSuccess("");
 
-      const response = await fetch(`/api/plans/${deleteConfirm.planId}`, {
+      const response = await fetchWithCsrf(`/api/plans/${deleteConfirm.planId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -82,7 +83,7 @@ export default function PlanList() {
 
   const handleToggleStatus = async (plan) => {
     try {
-      const response = await fetch(`/api/plans/${plan._id}/status`, {
+      const response = await fetchWithCsrf(`/api/plans/${plan._id}/status`, {
         method: "PATCH",
         credentials: "include",
       });
@@ -165,8 +166,9 @@ export default function PlanList() {
             type="button"
             onClick={() => setSuccess("")}
             className="text-green-700 hover:text-green-900"
+            aria-label="Dismiss success message"
           >
-            ✕
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}

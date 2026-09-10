@@ -182,8 +182,7 @@ export default function CouponList() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">Coupons</h1>
-          <p className="text-neutral-600 text-sm mt-1">
+          <p className="text-neutral-600 text-sm">
             Manage discount coupons and promotional codes
           </p>
         </div>

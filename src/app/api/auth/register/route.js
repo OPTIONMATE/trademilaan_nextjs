@@ -86,10 +86,16 @@ export async function POST(req) {
       });
     }
 
-    // Send OTP email (non-blocking — failure shouldn't prevent registration)
-    sendOtpMail({ to: normalizedEmail, otp, username: sanitizedUsername }).catch((err) => {
-      console.error("OTP email sending failed (non-blocking):", err.message);
-    });
+    // Send OTP email — await so failures are reported to the user
+    try {
+      await sendOtpMail({ to: normalizedEmail, otp, username: sanitizedUsername });
+    } catch (err) {
+      console.error("OTP email sending failed:", err.message);
+      return NextResponse.json(
+        { error: "Failed to send verification email. Please try again or use a different email address." },
+        { status: 502 }
+      );
+    }
 
     // Return step indicator — frontend switches to OTP entry
     return NextResponse.json({

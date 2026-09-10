@@ -445,6 +445,7 @@ export { transporter };
 /**
  * Send OTP verification email
  * Matches existing brand style (DM Sans, lime accent, SEBI footer)
+ * Includes retry logic for transient SMTP failures (rate limits, network blips)
  */
 export async function sendOtpMail({ to, otp, username }) {
   const from =
@@ -521,11 +522,33 @@ export async function sendOtpMail({ to, otp, username }) {
     replyTo: "spkumar.researchanalyst@gmail.com",
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("OTP mail sent ✅", info);
-  } catch (err) {
-    console.error("OTP mail send failed ❌", err);
-    throw err;
+  // Retry logic: Gmail SMTP can transiently fail (rate limits, network).
+  // Retry up to 3 times with exponential backoff for retryable errors.
+  const MAX_RETRIES = 3;
+  const RETRYABLE_CODES = ["EAI_AGAIN", "ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "421", "450", "451", "452"];
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`OTP mail sent ✅ (attempt ${attempt})`, info.messageId);
+      return;
+    } catch (err) {
+      const isRetryable =
+        RETRYABLE_CODES.some((code) => err.code === code || err.message?.includes(code)) ||
+        err.responseCode >= 400 && err.responseCode < 500;
+      const isLastAttempt = attempt === MAX_RETRIES;
+
+      console.error(
+        `OTP mail send failed ❌ (attempt ${attempt}/${MAX_RETRIES})${isRetryable && !isLastAttempt ? " — retrying..." : ""}`,
+        err.message
+      );
+
+      if (isLastAttempt || !isRetryable) {
+        throw err;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      await new Promise((resolve) => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+    }
   }
 }

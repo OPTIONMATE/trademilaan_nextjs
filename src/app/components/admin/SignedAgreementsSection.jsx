@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Download, Loader2 } from "lucide-react";
 
 export default function SignedAgreementsSection({ data }) {
   const [searchEmail, setSearchEmail] = useState("");
@@ -126,10 +127,14 @@ export default function SignedAgreementsSection({ data }) {
               >
                 {downloadingId === a._id ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">⏳</span> Downloading...
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Downloading...
                   </span>
                 ) : (
-                  <span>📥 Download PDF</span>
+                  <span className="flex items-center gap-2">
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                    Download PDF
+                  </span>
                 )}
               </button>
             </div>

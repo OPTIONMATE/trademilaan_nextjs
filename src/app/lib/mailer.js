@@ -441,3 +441,91 @@ SEBI Registered Research Analyst (INH000019327)`,
 }
 
 export { transporter };
+
+/**
+ * Send OTP verification email
+ * Matches existing brand style (DM Sans, lime accent, SEBI footer)
+ */
+export async function sendOtpMail({ to, otp, username }) {
+  const from =
+    process.env.MAIL_FROM ||
+    process.env.MAIL_USER ||
+    "trademilaan.data@gmail.com";
+
+  const currentYear = new Date().getFullYear();
+
+  const html = `
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:0;font-family:'DM Sans',Arial,sans-serif;">
+    <tr>
+      <td align="center" style="padding:20px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-left:4px solid #9BE749;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:28px 32px;">
+              <h1 style="margin:0 0 6px 0;font-size:32px;color:#111827;font-weight:700;line-height:1.2;">Trademilaan</h1>
+              <p style="margin:0 0 2px 0;font-size:11px;color:#9B9B9B;text-transform:uppercase;letter-spacing:1.2px;font-weight:600;">SEBI Registered Research Analyst</p>
+              <p style="margin:0;font-size:10px;color:#9B9B9B;letter-spacing:0.8px;">Registration No: INH000019327</p>
+            </td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td style="padding:0 32px 28px 32px;">
+
+              <h2 style="font-size:18px;margin:0 0 8px 0;color:#111827;font-weight:700;">Verify your email</h2>
+              <p style="font-size:14px;color:#404040;margin:0 0 24px 0;line-height:1.6;">
+                Welcome${username ? `, ${username}` : ""}! Use the following 6-digit code to complete your registration.
+              </p>
+
+              <!-- OTP Code -->
+              <div style="background:#f9fafb;border:2px dashed #9BE749;border-radius:12px;padding:24px;text-align:center;margin:0 0 24px 0;">
+                <p style="margin:0 0 8px 0;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Your verification code</p>
+                <p style="margin:0;font-size:42px;color:#111827;font-weight:700;letter-spacing:8px;font-family:'Courier New',monospace;">${otp}</p>
+              </div>
+
+              <p style="font-size:13px;color:#6b7280;margin:0 0 24px 0;line-height:1.6;">
+                This code expires in <strong style="color:#111827;">10 minutes</strong>. If you didn't create an account, you can safely ignore this email.
+              </p>
+
+              <p style="font-size:13px;color:#404040;margin:0 0 8px 0;line-height:1.6;">Regards,</p>
+              <p style="font-size:13px;color:#111827;font-weight:600;margin:0;">Sasikumar Peyyala</p>
+              <p style="font-size:11px;color:#9B9B9B;margin:0;">SEBI Registered Research Analyst (INH000019327)</p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;border-top:1px solid #eaeaea;background:#f9fafb;">
+              <p style="font-size:11px;color:#9B9B9B;margin:0 0 6px 0;text-align:center;">${currentYear} Trademilaan | Sasikumar Peyyala, SEBI Registered Research Analyst</p>
+              <p style="font-size:11px;color:#9B9B9B;margin:0;text-align:center;">
+                <a href="https://www.trademilaan.com/privacy-policy" style="color:#9BE749;text-decoration:none;">Privacy Policy</a> •
+                <a href="https://www.trademilaan.com/terms-and-condition" style="color:#9BE749;text-decoration:none;">Terms & Conditions</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+  `;
+
+  const mailOptions = {
+    from,
+    to,
+    subject: `Your Trademilaan verification code: ${otp}`,
+    html,
+    text: `Welcome${username ? `, ${username}` : ""}!\n\nYour Trademilaan verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you didn't create an account, you can safely ignore this email.\n\nRegards,\nSasikumar Peyyala\nSEBI Registered Research Analyst (INH000019327)`,
+    replyTo: "spkumar.researchanalyst@gmail.com",
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("OTP mail sent ✅", info);
+  } catch (err) {
+    console.error("OTP mail send failed ❌", err);
+    throw err;
+  }
+}

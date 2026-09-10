@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit2, Trash2, Eye, EyeOff, Plus, Loader } from "lucide-react";
+import { Edit2, Trash2, Eye, EyeOff, Plus, Loader, X } from "lucide-react";
 import PlanForm from "./PlanForm";
 
 export default function PlanList() {
@@ -165,8 +165,9 @@ export default function PlanList() {
             type="button"
             onClick={() => setSuccess("")}
             className="text-green-700 hover:text-green-900"
+            aria-label="Dismiss success message"
           >
-            ✕
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}

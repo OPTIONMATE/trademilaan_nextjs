@@ -17,7 +17,7 @@ export async function GET(req) {
     await connectDB();
 
     // Extract user from token
-    const { isValid, user, error } = verifyAuth(req);
+    const { isValid, user, error } = await verifyAuth(req);
 
     // Build query based on user role
     let query = {};
@@ -66,7 +66,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(

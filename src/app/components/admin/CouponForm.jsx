@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function CouponForm({ coupon = null, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -68,7 +69,7 @@ export default function CouponForm({ coupon = null, onSubmit, onCancel }) {
         expiresAt: formData.expiresAt || null,
       };
 
-      const response = await fetch(
+      const response = await fetchWithCsrf(
         coupon ? `/api/coupons/${coupon._id}` : "/api/coupons",
         {
           method: coupon ? "PUT" : "POST",

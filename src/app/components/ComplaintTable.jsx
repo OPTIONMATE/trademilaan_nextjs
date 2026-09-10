@@ -10,7 +10,9 @@ export default function ComplaintTable() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const res = await fetch("/api/admin/complaint-stats");
+        // Public read-only disclosure endpoint. This page is public (linked in
+        // the public navbar), so it must not call the admin-only resource.
+        const res = await fetch("/api/complaint-stats");
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.message || "Failed to load complaint stats");

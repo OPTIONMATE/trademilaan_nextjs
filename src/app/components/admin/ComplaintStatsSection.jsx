@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 const buildEmptyStats = () => ({
   monthlyReceiptRows: [
@@ -129,7 +130,7 @@ export default function ComplaintStatsSection() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/admin/complaint-stats", {
+      const res = await fetchWithCsrf("/api/admin/complaint-stats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stats),

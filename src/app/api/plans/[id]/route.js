@@ -26,7 +26,7 @@ export async function GET(req, { params }) {
 
     await connectDB();
 
-    const { isValid, user } = verifyAuth(req);
+    const { isValid, user } = await verifyAuth(req);
     const isAdmin = isValid && isAdminUser(user);
 
     // Fetch plan
@@ -82,7 +82,7 @@ export async function PUT(req, { params }) {
     const { id } = await params;
 
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(
@@ -194,7 +194,7 @@ export async function DELETE(req, { params }) {
     const { id } = await params;
 
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(
@@ -285,7 +285,7 @@ export async function PATCH(req, { params }) {
     }
 
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(

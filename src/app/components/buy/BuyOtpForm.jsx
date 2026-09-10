@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export default function BuyOtpForm({ onSuccess, planData }) {
   const [otp, setOtp] = useState("");
@@ -10,7 +11,7 @@ export default function BuyOtpForm({ onSuccess, planData }) {
     setError("");
     setLoading(true);
 
-    const res = await fetch("/api/buy/verify-otp", {
+    const res = await fetchWithCsrf("/api/buy/verify-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

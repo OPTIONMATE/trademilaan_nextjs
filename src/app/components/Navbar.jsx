@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, MenuItem } from "./ui/Navbar-menu";
 import { cn } from "@/app/lib/utils";
 import { useAuth } from "../context/AuthContext";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -146,7 +147,7 @@ export function Navbar() {
                       onClick={async () => {
                         setProfileOpen(false);
                         // Logout functionality
-                        await fetch("/api/auth/logout", { method: "POST" });
+                            await fetchWithCsrf("/api/auth/logout", { method: "POST" });
                         // Refresh page to clear auth state
                         window.location.href = "/login";
                       }}

@@ -14,7 +14,7 @@ export async function PATCH(req, { params }) {
     const { id } = params;
 
     // Check authentication and authorization
-    const { isValid, user, error: authError } = verifyAuth(req);
+    const { isValid, user, error: authError } = await verifyAuth(req);
 
     if (!isValid) {
       return NextResponse.json(

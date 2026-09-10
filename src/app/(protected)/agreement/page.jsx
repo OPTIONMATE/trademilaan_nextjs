@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import ESignModal from "@/app/components/ESignModal";
+import { fetchWithCsrf } from "@/app/lib/csrfClient";
 
 // Load AgreementViewer only in browser
 const AgreementViewer = dynamic(
@@ -28,7 +29,7 @@ export default function AgreementPage() {
   }, []);
 
   const handleSubmit = async () => {
-    await fetch("/api/agreement/accept", {
+    await fetchWithCsrf("/api/agreement/accept", {
       method: "POST"
     });
 

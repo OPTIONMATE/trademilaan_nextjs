@@ -4,6 +4,7 @@ import SignedAgreement from "@/app/lib/models/SignedAgreement";
 import User from "@/app/lib/models/User";
 import Payment from "@/app/lib/models/Payment";
 import mongoose from "mongoose";
+import { requireAdmin } from "@/app/lib/authServer";
 
 /**
  * Diagnostic endpoint to identify data gaps in signed users
@@ -11,6 +12,7 @@ import mongoose from "mongoose";
  */
 export async function GET(req) {
   try {
+    await requireAdmin();
     await connectDB();
 
     // Get all signed agreements
@@ -128,6 +130,12 @@ export async function GET(req) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    if (error.statusCode === 401) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (error.statusCode === 403) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     console.error("Error running diagnostics:", error);
     return NextResponse.json(
       { error: "Failed to run diagnostics", details: error.message },

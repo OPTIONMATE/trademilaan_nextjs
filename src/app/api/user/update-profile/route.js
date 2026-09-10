@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { requireAuth } from "@/app/lib/authServer";
-import { 
+import {
   isValidEmail, 
   isValidPhone, 
   isValidPAN, 
   sanitizeString,
   isValidObjectId 
 } from "@/app/lib/validators";
+import { normalizeDob, normalizeGender } from "@/app/lib/profileFields";
 import { serializeUser } from "@/app/lib/serializers";
 import { createPerUserRateLimiter } from "@/app/lib/rateLimiter";
 
@@ -57,20 +58,18 @@ export async function PUT(req) {
     }
 
     if (dob !== undefined && dob !== null) {
-      // Basic date validation
-      const dateObj = new Date(dob);
-      if (isNaN(dateObj.getTime())) {
+      // Basic date validation (normalized to the app-wide yyyy-MM-dd format)
+      const normalizedDob = normalizeDob(dob);
+      if (!normalizedDob) {
         errors.dob = "Invalid date format";
-      }
-      // Check if date is not in the future
-      if (dateObj > new Date()) {
+      } else if (new Date(normalizedDob) > new Date()) {
+        // Check if date is not in the future
         errors.dob = "Date of birth cannot be in the future";
       }
     }
 
     if (gender !== undefined && gender !== null) {
-      const validGenders = ["male", "female", "other"];
-      if (!validGenders.includes(String(gender).toLowerCase())) {
+      if (!normalizeGender(gender)) {
         errors.gender = "Invalid gender value";
       }
     }
@@ -108,10 +107,13 @@ export async function PUT(req) {
       updateData.phone = phone;
     }
     if (dob !== undefined && dob !== null) {
-      updateData.dob = new Date(dob);
+      // Schema stores dob as a String; keep the yyyy-MM-dd format so the
+      // profile page and <input type="date"> can render the saved value back.
+      updateData.dob = normalizeDob(dob);
     }
     if (gender !== undefined && gender !== null) {
-      updateData.gender = String(gender).toLowerCase();
+      // Store the canonical label ("Male" | "Female" | "Other") used by the UI
+      updateData.gender = normalizeGender(gender);
     }
     if (state !== undefined && state !== null) {
       updateData.state = sanitizeString(state);

@@ -6,6 +6,7 @@ import Protected from "../components/Protected";
 import LogoutButton from "../components/LogoutButton";
 import EditProfileModal from "../components/EditProfileModal";
 import { useAuth } from "../context/AuthContext";
+import { normalizeGender } from "@/app/lib/profileFields";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -83,7 +84,7 @@ export default function ProfilePage() {
                 Gender
               </p>
               <p className="text-base font-semibold text-neutral-900">
-                {user?.gender || "Not set"}
+                {normalizeGender(user?.gender) || "Not set"}
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4">

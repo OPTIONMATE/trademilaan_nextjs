@@ -70,24 +70,24 @@ export default function SubscriptionsSection() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg p-6 border border-blue-200">
+        <div className="bg-linear-to-br from-blue-50 to-blue-100/50 rounded-lg p-6 border border-blue-200">
           <p className="text-sm text-neutral-600 mb-1">Total Revenue</p>
           <p className="text-3xl font-bold text-blue-600">
             ₹{totalRevenue.toLocaleString("en-IN")}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-lg p-6 border border-green-200">
+        <div className="bg-linear-to-br from-green-50 to-green-100/50 rounded-lg p-6 border border-green-200">
           <p className="text-sm text-neutral-600 mb-1">Active Plans</p>
           <p className="text-3xl font-bold text-green-600">{activeCount}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-lg p-6 border border-orange-200">
+        <div className="bg-linear-to-br from-orange-50 to-orange-100/50 rounded-lg p-6 border border-orange-200">
           <p className="text-sm text-neutral-600 mb-1">Expired Plans</p>
           <p className="text-3xl font-bold text-orange-600">{expiredCount}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg p-6 border border-purple-200">
+        <div className="bg-linear-to-br from-purple-50 to-purple-100/50 rounded-lg p-6 border border-purple-200">
           <p className="text-sm text-neutral-600 mb-1">Total Payments</p>
           <p className="text-3xl font-bold text-purple-600">
             {payments.length}

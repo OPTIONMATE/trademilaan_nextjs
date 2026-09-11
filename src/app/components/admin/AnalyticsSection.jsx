@@ -113,11 +113,13 @@ export default function AnalyticsSection() {
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-4">Payments Overview</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Total Revenue */}
+              {/* Amounts from /api/admin/analytics are in RUPEES (Payment.amount
+                is stored in rupees). Render directly — never divide by 100. */}
+            {/* Total Revenue */}
               <div className="bg-gradient-to-br from-emerald-50/60 to-emerald-100/20 border border-emerald-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-emerald-700 font-medium text-sm mb-2">Total Revenue</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  ₹{(summary.total_revenue / 100).toLocaleString("en-IN")}
+                  ₹{Number(summary.total_revenue || 0).toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs text-emerald-600 mt-2">All time</p>
               </div>
@@ -126,7 +128,7 @@ export default function AnalyticsSection() {
               <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/20 border border-blue-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-blue-700 font-medium text-sm mb-2">This Month Revenue</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  ₹{(summary.this_month_revenue / 100).toLocaleString("en-IN")}
+                  ₹{Number(summary.this_month_revenue || 0).toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs text-blue-600 mt-2">Current month</p>
               </div>
@@ -196,7 +198,7 @@ export default function AnalyticsSection() {
                       <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{month.month}</td>
                         <td className="px-6 py-4 text-right text-sm font-semibold text-emerald-600">
-                          ₹{(month.revenue / 100).toLocaleString("en-IN")}
+                          ₹{Number(month.revenue || 0).toLocaleString("en-IN")}
                         </td>
                         <td className="px-6 py-4 text-right text-sm text-gray-900">{month.transactions}</td>
                         <td className="px-6 py-4 text-right text-sm text-gray-900">{month.unique_users}</td>

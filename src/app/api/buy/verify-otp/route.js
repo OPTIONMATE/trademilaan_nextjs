@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { incrementOTPAttempt, resetOTPAttempts } from "@/app/lib/validators";
+import { verifyOTP, OTP_PURPOSES } from "@/app/lib/otpService";
 
 export async function POST(req) {
   const { otp } = await req.json();
@@ -42,11 +43,20 @@ export async function POST(req) {
     return NextResponse.json({ message: "User not found" }, { status: 404 });
   }
 
-  if (
-    user.emailOtp !== otp ||
-    !user.emailOtpExpiry ||
-    user.emailOtpExpiry < new Date()
-  ) {
+  // Verify the BUY_VERIFICATION OTP (purpose-scoped, single-use)
+  const result = await verifyOTP({
+    userId: user._id,
+    purpose: OTP_PURPOSES.BUY_VERIFICATION,
+    otp,
+  });
+
+  if (!result.valid) {
+    if (result.reason === "attempts_exceeded") {
+      return NextResponse.json(
+        { message: "Too many verification attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
       { message: "Invalid or expired OTP" },
       { status: 400 }

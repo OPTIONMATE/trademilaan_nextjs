@@ -4,6 +4,7 @@ import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { transporter } from "@/app/lib/mailer";
 import { isValidPhone } from "@/app/lib/validators";
+import { issueOTP, OTP_PURPOSES } from "@/app/lib/otpService";
 
 export async function POST(req) {
   try {
@@ -48,9 +49,7 @@ export async function POST(req) {
     if (!user)
       return NextResponse.json({ message: "User not found" }, { status: 404 });
 
-    // 4. Save details & generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
+    // 4. Save details & issue OTP
     user.fullName = fullName;
     user.dob = dob;
     user.gender = gender;
@@ -78,12 +77,18 @@ export async function POST(req) {
       user.email = normalizedEmail;
     }
     user.panNumber = normalizedPan;
-    user.emailOtp = otp;
-    user.emailOtpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
     await user.save();
 
-    // 5. Send OTP email
+    // 5. Issue a BUY_VERIFICATION OTP (isolated from other OTP purposes)
+    const otp = await issueOTP({
+      userId: user._id,
+      email: user.email,
+      purpose: OTP_PURPOSES.BUY_VERIFICATION,
+      ttlMinutes: 5, // buy OTPs expire in 5 minutes (unchanged)
+    });
+
+    // 6. Send OTP email
     await transporter.sendMail({
       from: process.env.MAIL_FROM || process.env.MAIL_USER,
       to: user.email,

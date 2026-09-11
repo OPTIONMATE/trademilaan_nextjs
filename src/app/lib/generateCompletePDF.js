@@ -81,9 +81,13 @@ export async function generateCompleteAgreementPDF(agreementData) {
         ? computeFinalServiceDate(planStartDate, planDuration)
         : new Date(planStartDate);
     }
-    // Format as DD/MM/YYYY
+    // Format as DD/MM/YYYY. Missing/invalid dates render blank — the PDF must
+    // never fabricate historical agreement dates.
     function formatDate(d) {
-      return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+      if (d === undefined || d === null || d === "") return "";
+      const parsed = d instanceof Date ? d : new Date(d);
+      if (Number.isNaN(parsed.getTime())) return "";
+      return `${parsed.getDate()}/${parsed.getMonth() + 1}/${parsed.getFullYear()}`;
     }
     const agreementStartDateDisplay = formatDate(planStartDate);
     const agreementEndDateDisplay = formatDate(planEndDate);

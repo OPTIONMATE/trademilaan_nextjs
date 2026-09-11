@@ -2,8 +2,10 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
 import SignedAgreement from "@/app/lib/models/SignedAgreement";
+import Plan from "@/app/lib/models/Plan";
 import crypto from "crypto";
 import { requireAuth } from "@/app/lib/authServer";
+import { isValidObjectId } from "@/app/lib/validators";
 
 export async function POST(req) {
   try {
@@ -103,6 +105,39 @@ export async function POST(req) {
       // );
     }
 
+    // ✅ SERVICE-AGREEMENT VALIDITY: the server is authoritative for the
+    // purchased duration. Resolve the Plan from MongoDB by the signed plan id
+    // (NEVER trust the client-sent signedPlanDuration) and snapshot the
+    // trusted DB duration. Invalid/missing durations are rejected — never
+    // silently defaulted to 30 days.
+    let authoritativePlanDuration = null;
+    const requestedPlanId = String(signedPlanId || "").trim();
+    if (requestedPlanId) {
+      if (!isValidObjectId(requestedPlanId)) {
+        return NextResponse.json(
+          { message: "Invalid plan selected for agreement" },
+          { status: 400 },
+        );
+      }
+      const dbPlan = await Plan.findById(requestedPlanId)
+        .select("duration isActive")
+        .lean();
+      if (!dbPlan || dbPlan.isActive === false) {
+        return NextResponse.json(
+          { message: "Selected plan is unavailable for agreement" },
+          { status: 400 },
+        );
+      }
+      const dbDuration = Number(dbPlan.duration);
+      if (!Number.isInteger(dbDuration) || dbDuration <= 0) {
+        return NextResponse.json(
+          { message: "Selected plan has invalid validity configuration" },
+          { status: 400 },
+        );
+      }
+      authoritativePlanDuration = dbDuration;
+    }
+
     // Calculate file hash (SHA-256 of HTML + signature)
     const hashInput = `${agreementHtml}${signatureData}${signedTimestamp}`;
     const fileHash = crypto
@@ -127,7 +162,12 @@ export async function POST(req) {
       signedPlanName,
       signedPlanId,
       signedPlanType,
-      signedPlanDuration,
+      // Historical snapshot uses the server-resolved DB duration when the
+      // plan could be identified; otherwise preserves a valid client value
+      // only as legacy data (never a fabricated 30-day default).
+      signedPlanDuration:
+        authoritativePlanDuration ??
+        (Number(signedPlanDuration) > 0 ? Number(signedPlanDuration) : null),
       agreementHtml,
       signatureData,
       signedName,

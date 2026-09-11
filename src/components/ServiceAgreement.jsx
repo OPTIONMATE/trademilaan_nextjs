@@ -31,7 +31,10 @@ export default function ServiceAgreement({
   planStartDate,
   planEndDate,
 }) {
-  // Plan duration logic (same as PDF)
+  // Plan duration logic: the server-resolved snapshot (planDuration prop) is
+  // authoritative. Name/type guessing below is a LAST-RESORT legacy preview
+  // fallback only when no snapshot/signed duration exists — it never overrides
+  // stored agreement data and never invents a 30-day default.
   let duration = planDuration;
   if (!duration && planName) {
     const planNameLower = planName.toLowerCase();
@@ -62,22 +65,27 @@ export default function ServiceAgreement({
         duration = 365;
         break;
       default:
-        duration = 30;
+        duration = undefined;
     }
   }
+  // Preview-only: when no duration could be resolved, leave the end date
+  // blank rather than fabricating validity (server remains authoritative).
   let startDate = planStartDate ? new Date(planStartDate) : new Date();
   // Inclusive calendar-day rule: end = start + (duration - 1) days.
   // Backend (Payment.expiresAt / Invoice.endDate) remains authoritative;
   // this only matches the agreement preview to the same business semantics.
   let endDate = planEndDate
     ? new Date(planEndDate)
-    : (() => {
-        const end = new Date(startDate);
-        end.setDate(end.getDate() + duration - 1);
-        return end;
-      })();
+    : Number(duration) > 0
+      ? (() => {
+          const end = new Date(startDate);
+          end.setDate(end.getDate() + Number(duration) - 1);
+          return end;
+        })()
+      : null;
   function formatDate(d) {
-    return d.toLocaleDateString("en-IN");
+    if (!d || Number.isNaN(new Date(d).getTime())) return "—";
+    return new Date(d).toLocaleDateString("en-IN");
   }
   const [showTOC, setShowTOC] = useState(false);
 

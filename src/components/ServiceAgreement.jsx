@@ -66,9 +66,16 @@ export default function ServiceAgreement({
     }
   }
   let startDate = planStartDate ? new Date(planStartDate) : new Date();
+  // Inclusive calendar-day rule: end = start + (duration - 1) days.
+  // Backend (Payment.expiresAt / Invoice.endDate) remains authoritative;
+  // this only matches the agreement preview to the same business semantics.
   let endDate = planEndDate
     ? new Date(planEndDate)
-    : new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
+    : (() => {
+        const end = new Date(startDate);
+        end.setDate(end.getDate() + duration - 1);
+        return end;
+      })();
   function formatDate(d) {
     return d.toLocaleDateString("en-IN");
   }

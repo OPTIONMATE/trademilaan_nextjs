@@ -34,6 +34,8 @@ export async function GET(request) {
       pan: String,
       planId: String,
       planName: String,
+      planType: String,
+      planDuration: Number,
       razorpay_payment_id: String,
       createdAt: { type: Date, default: Date.now },
     });

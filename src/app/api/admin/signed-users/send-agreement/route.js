@@ -4,6 +4,7 @@ import SignedAgreement from "@/app/lib/models/SignedAgreement";
 import User from "@/app/lib/models/User";
 import Payment from "@/app/lib/models/Payment";
 import { generateCompleteAgreementPDF } from "@/app/lib/generateCompletePDF";
+import { computeFinalServiceDate, derivePurchasedDurationDays } from "@/app/lib/planValidity";
 import { sendAgreementPDFMail } from "@/app/lib/mailer";
 import { requireAdmin } from "@/app/lib/authServer";
 import { isValidObjectId } from "@/app/lib/validators";
@@ -44,11 +45,29 @@ export async function POST(req) {
     const planStartDate = relatedPayment?.paidAt || agreement.signedTimestamp || new Date();
     const planEndDate = relatedPayment?.expiresAt || undefined;
     const planType = relatedPayment?.planType || agreement.signedPlanType || "monthly";
-    const planDuration = planEndDate && planStartDate
-      ? Math.max(1, Math.ceil((new Date(planEndDate).getTime() - new Date(planStartDate).getTime()) / (24 * 60 * 60 * 1000)))
-      : agreement.signedPlanDuration || undefined;
+    // Prefer the purchased-validity snapshot (Payment.planDuration) over
+    // deriving duration from dates. Date derivation uses ONLY stored
+    // historical timestamps (never current Plan config, never "today") and
+    // remains as a legacy fallback for records that predate the snapshot.
+    const planDuration =
+      Number(relatedPayment?.planDuration) > 0
+        ? Number(relatedPayment.planDuration)
+        : Number(agreement?.signedPlanDuration) > 0
+          ? Number(agreement.signedPlanDuration)
+          : planEndDate && planStartDate
+            ? (derivePurchasedDurationDays(planStartDate, planEndDate) ?? undefined)
+            : undefined;
 
-    const effectivePlanEndDate = planEndDate || (planStartDate && planDuration ? new Date(new Date(planStartDate).getTime() + Number(planDuration) * 24 * 60 * 60 * 1000) : undefined);
+    // Reconstruct a missing end date with the same inclusive calendar-day
+    // rule used at purchase: end = start + (duration - 1) days. When a stored
+    // end date exists it is used unchanged (read-only; never overwritten).
+    const effectivePlanEndDate =
+      planEndDate ||
+      (planStartDate &&
+      Number(planDuration) > 0 &&
+      !Number.isNaN(new Date(planStartDate).getTime())
+        ? computeFinalServiceDate(new Date(planStartDate), Number(planDuration))
+        : undefined);
 
     // Generate PDF buffer
     const pdfBuffer = await generateCompleteAgreementPDF({

@@ -54,6 +54,10 @@ export function serializePayment(payment) {
     status: payment.status,
     planId: payment.planId,
     planName: payment.planName,
+    planType: payment.planType,
+    planDuration: payment.planDuration,
+    paidAt: payment.paidAt,
+    expiresAt: payment.expiresAt,
     createdAt: payment.createdAt,
     razorpay_payment_id: payment.razorpay_payment_id,
   };
@@ -68,10 +72,12 @@ export function serializeInvoice(invoice) {
     _id: invoice._id,
     clientName: invoice.clientName,
     amount: invoice.amount,
-    startDate: invoice.startDate,
-    endDate: invoice.endDate,
     planId: invoice.planId,
     planName: invoice.planName,
+    planType: invoice.planType,
+    planDuration: invoice.planDuration,
+    startDate: invoice.startDate,
+    endDate: invoice.endDate,
     createdAt: invoice.createdAt,
   };
 }

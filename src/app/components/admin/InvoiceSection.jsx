@@ -189,6 +189,14 @@ export default function InvoiceSection({ data }) {
                     </p>
                   </div>
                   <div>
+                    <p className="text-xs text-neutral-500 uppercase tracking-wide">
+                      Plan
+                    </p>
+                    <p className="text-sm font-medium text-neutral-900 mt-1">
+                      {selectedInvoice.planName || "N/A"}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-xs text-neutral-500 uppercase tracking-wide">Amount</p>
                     <p className="text-sm font-bold text-green-600 mt-1">
                       {formatCurrency(selectedInvoice.amount)}
@@ -226,6 +234,14 @@ export default function InvoiceSection({ data }) {
                     <span className="font-medium text-neutral-900">
                       {formatDate(selectedInvoice.startDate)} to{" "}
                       {formatDate(selectedInvoice.endDate)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-600">Purchased Validity</span>
+                    <span className="font-medium text-neutral-900">
+                      {Number(selectedInvoice?.planDuration) > 0
+                        ? `${Number(selectedInvoice.planDuration)} days`
+                        : "—"}
                     </span>
                   </div>
                   <div className="border-t border-green-200 pt-2 mt-2 flex justify-between items-center">

@@ -238,7 +238,7 @@ export default function PaymentForm({
               if (onPaymentComplete) {
                 onPaymentComplete({
                   ...vData,
-                  expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                  expiry: vData?.expiresAt || null,
                 });
               }
             } else {

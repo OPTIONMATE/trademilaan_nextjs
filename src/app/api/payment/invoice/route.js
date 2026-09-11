@@ -48,6 +48,8 @@ export async function GET(request) {
       pan: String,
       planId: String,
       planName: String,
+      planType: String,
+      planDuration: Number,
       razorpay_payment_id: String,
     });
     const Invoice =
@@ -80,6 +82,10 @@ export async function GET(request) {
       gst: `Rs. ${gst}`,
       subtotal: `Rs. ${basePrice}`,
       total: `Rs. ${amount}`,
+      // Render stored historical dates. For legacy records missing invoice
+      // dates, fall back to the stored payment timestamps (never "today").
+      startDate: invoice.startDate || payment.paidAt,
+      endDate: invoice.endDate || payment.expiresAt,
     };
 
     const pdfBuffer = await generateInvoicePDF(invoiceData);

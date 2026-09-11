@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import fs from "fs";
 import path from "path";
+import { computeFinalServiceDate } from "./planValidity";
 
 function formatSignedDateDisplay(input) {
   if (input === undefined || input === null || input === "") {
@@ -27,10 +28,24 @@ export async function generateCompleteAgreementPDF(agreementData) {
 
     // --- PLAN DATES LOGIC ---
     // agreementData.planType (e.g. 'monthly'), agreementData.planDuration (days), agreementData.planStartDate (ISO or Date)
+    // The AGREEMENT is a renderer, not the source of truth: planDuration must
+    // come from the purchased snapshot (Payment.planDuration /
+    // SignedAgreement.signedPlanDuration), which the caller resolves first.
+    // The type->days mapping below is a legacy fallback ONLY for records that
+    // predate the snapshot fields AND have no stored planEndDate — never
+    // recalculate an old agreement from the current Plan configuration, and
+    // never override a stored end date with a recomputed one.
     let planType = agreementData.planType || "monthly";
-    let planDuration = agreementData.planDuration;
-    // If not provided, fallback to common durations
-    if (!planDuration) {
+    let planDuration = Number(agreementData.planDuration);
+    if (!Number.isInteger(planDuration) || planDuration <= 0) {
+      planDuration = undefined;
+    }
+    // If not provided AND no stored end date exists, fallback to common durations
+    const hasStoredPlanEndDate =
+      agreementData.planEndDate !== undefined &&
+      agreementData.planEndDate !== null &&
+      agreementData.planEndDate !== "";
+    if (!planDuration && !hasStoredPlanEndDate) {
       switch (planType) {
         case "weekly":
           planDuration = 7;
@@ -54,13 +69,17 @@ export async function generateCompleteAgreementPDF(agreementData) {
     let planStartDate = agreementData.planStartDate
       ? new Date(agreementData.planStartDate)
       : new Date();
+    // Reconstruct a missing end date with the inclusive calendar-day rule:
+    // end = start + (duration - 1) days. A stored planEndDate is used as-is.
     let planEndDate = agreementData.planEndDate
       ? new Date(agreementData.planEndDate)
-      : new Date(planStartDate.getTime() + planDuration * 24 * 60 * 60 * 1000);
+      : Number.isInteger(planDuration) && planDuration > 0
+        ? computeFinalServiceDate(planStartDate, planDuration)
+        : new Date(planStartDate);
     if (Number.isNaN(planEndDate.getTime())) {
-      planEndDate = new Date(
-        planStartDate.getTime() + planDuration * 24 * 60 * 60 * 1000,
-      );
+      planEndDate = Number.isInteger(planDuration) && planDuration > 0
+        ? computeFinalServiceDate(planStartDate, planDuration)
+        : new Date(planStartDate);
     }
     // Format as DD/MM/YYYY
     function formatDate(d) {

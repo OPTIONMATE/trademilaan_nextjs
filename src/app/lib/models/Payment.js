@@ -8,6 +8,8 @@ const PaymentSchema = new mongoose.Schema({
   planId: { type: String, default: null, index: true },
   planName: { type: String, default: null },
   planType: { type: String, default: null },
+  /** Historical snapshot of the purchased Plan.duration (days). */
+  planDuration: { type: Number, default: null },
   name: { type: String, required: true },
   email: { type: String, required: true },
   phone: { type: String, required: true },

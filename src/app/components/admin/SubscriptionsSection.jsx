@@ -139,6 +139,9 @@ export default function SubscriptionsSection() {
                   Amount
                 </th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-900">
+                  Validity
+                </th>
+                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
                   Paid Date
                 </th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-900">
@@ -173,6 +176,11 @@ export default function SubscriptionsSection() {
                     </td>
                     <td className="py-4 px-4 font-semibold text-neutral-900">
                       ₹{payment.amount.toLocaleString("en-IN")}
+                    </td>
+                    <td className="py-4 px-4 text-neutral-600">
+                      {Number(payment?.planDuration) > 0
+                        ? `${Number(payment.planDuration)} days`
+                        : "—"}
                     </td>
                     <td className="py-4 px-4 text-neutral-600">
                       {new Date(payment.paidAt).toLocaleDateString("en-IN")}

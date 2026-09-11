@@ -162,6 +162,9 @@ export default function MySubscriptionsPage() {
                       Plan Type
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-neutral-900">
+                      Validity
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-neutral-900">
                       Payment ID
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-neutral-900">
@@ -196,6 +199,11 @@ export default function MySubscriptionsPage() {
                         </td>
                         <td className="py-4 px-4 text-neutral-700 uppercase text-xs font-bold tracking-wide">
                           {payment.planType || "N/A"}
+                        </td>
+                        <td className="py-4 px-4 text-neutral-600">
+                          {Number(payment?.planDuration) > 0
+                            ? `${Number(payment.planDuration)} days`
+                            : "—"}
                         </td>
                         <td className="py-4 px-4 font-mono text-sm text-neutral-600">
                           <span title={getPaymentIdValue(payment) || "Payment ID unavailable"}>

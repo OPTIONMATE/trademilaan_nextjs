@@ -77,7 +77,7 @@ export default function AnalyticsSection() {
             onClick={() => setAnalyticsTab("payments")}
             className={`px-6 py-2 rounded-lg font-medium transition cursor-pointer ${
               analyticsTab === "payments"
-                ? "bg-gradient-to-r from-emerald-500 to-purple-600 text-white"
+                ? "bg-linear-to-r from-emerald-500 to-purple-600 text-white"
                 : "bg-transparent text-gray-600 hover:bg-gray-100"
             }`}
           >
@@ -88,7 +88,7 @@ export default function AnalyticsSection() {
             onClick={() => setAnalyticsTab("signups")}
             className={`px-6 py-2 rounded-lg font-medium transition cursor-pointer ${
               analyticsTab === "signups"
-                ? "bg-gradient-to-r from-emerald-500 to-purple-600 text-white"
+                ? "bg-linear-to-r from-emerald-500 to-purple-600 text-white"
                 : "bg-transparent text-gray-600 hover:bg-gray-100"
             }`}
           >
@@ -113,33 +113,35 @@ export default function AnalyticsSection() {
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-4">Payments Overview</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Total Revenue */}
-              <div className="bg-gradient-to-br from-emerald-50/60 to-emerald-100/20 border border-emerald-200 rounded-lg p-5 hover:shadow-md transition">
+              {/* Amounts from /api/admin/analytics are in RUPEES (Payment.amount
+                is stored in rupees). Render directly — never divide by 100. */}
+            {/* Total Revenue */}
+              <div className="bg-linear-to-br from-emerald-50/60 to-emerald-100/20 border border-emerald-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-emerald-700 font-medium text-sm mb-2">Total Revenue</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  ₹{(summary.total_revenue / 100).toLocaleString("en-IN")}
+                  ₹{Number(summary.total_revenue || 0).toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs text-emerald-600 mt-2">All time</p>
               </div>
 
               {/* This Month Revenue */}
-              <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/20 border border-blue-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-blue-50/60 to-blue-100/20 border border-blue-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-blue-700 font-medium text-sm mb-2">This Month Revenue</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  ₹{(summary.this_month_revenue / 100).toLocaleString("en-IN")}
+                  ₹{Number(summary.this_month_revenue || 0).toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs text-blue-600 mt-2">Current month</p>
               </div>
 
               {/* Active Subscriptions */}
-              <div className="bg-gradient-to-br from-purple-50/60 to-purple-100/20 border border-purple-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-purple-50/60 to-purple-100/20 border border-purple-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-purple-700 font-medium text-sm mb-2">Active Subscriptions</p>
                 <p className="text-3xl font-bold text-gray-900">{summary.active_subscriptions}</p>
                 <p className="text-xs text-purple-600 mt-2">Active plans</p>
               </div>
 
               {/* Total Transactions */}
-              <div className="bg-gradient-to-br from-orange-50/60 to-orange-100/20 border border-orange-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-orange-50/60 to-orange-100/20 border border-orange-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-orange-700 font-medium text-sm mb-2">Total Transactions</p>
                 <p className="text-3xl font-bold text-gray-900">{summary.total_payments}</p>
                 <p className="text-xs text-orange-600 mt-2">Payment count</p>
@@ -184,7 +186,7 @@ export default function AnalyticsSection() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                    <tr className="bg-linear-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Month</th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Revenue</th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Transactions</th>
@@ -196,7 +198,7 @@ export default function AnalyticsSection() {
                       <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{month.month}</td>
                         <td className="px-6 py-4 text-right text-sm font-semibold text-emerald-600">
-                          ₹{(month.revenue / 100).toLocaleString("en-IN")}
+                          ₹{Number(month.revenue || 0).toLocaleString("en-IN")}
                         </td>
                         <td className="px-6 py-4 text-right text-sm text-gray-900">{month.transactions}</td>
                         <td className="px-6 py-4 text-right text-sm text-gray-900">{month.unique_users}</td>
@@ -218,28 +220,28 @@ export default function AnalyticsSection() {
             <h3 className="text-lg font-bold text-gray-900 mb-4">Signups Overview</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Users */}
-              <div className="bg-gradient-to-br from-emerald-50/60 to-emerald-100/30 border border-emerald-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-emerald-50/60 to-emerald-100/30 border border-emerald-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-emerald-700 font-medium text-sm mb-2">Total Users</p>
                 <p className="text-3xl font-bold text-gray-900">{summary.total_users}</p>
                 <p className="text-xs text-emerald-600 mt-2">+{summary.new_signups_today} today</p>
               </div>
 
               {/* New Signups Today */}
-              <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/30 border border-blue-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-blue-50/60 to-blue-100/30 border border-blue-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-blue-700 font-medium text-sm mb-2">New Signups</p>
                 <p className="text-3xl font-bold text-gray-900">{summary.new_signups_today}</p>
                 <p className="text-xs text-blue-600 mt-2">Last 24 hours</p>
               </div>
 
               {/* Logged In Today */}
-              <div className="bg-gradient-to-br from-green-50/60 to-green-100/30 border border-green-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-green-50/60 to-green-100/30 border border-green-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-green-700 font-medium text-sm mb-2">Logged In</p>
                 <p className="text-3xl font-bold text-gray-900">{summary.total_logged_in_today}</p>
                 <p className="text-xs text-green-600 mt-2">Active today</p>
               </div>
 
               {/* Active Last 30 Days */}
-              <div className="bg-gradient-to-br from-purple-50/60 to-purple-100/30 border border-purple-200 rounded-lg p-5 hover:shadow-md transition">
+              <div className="bg-linear-to-br from-purple-50/60 to-purple-100/30 border border-purple-200 rounded-lg p-5 hover:shadow-md transition">
                 <p className="text-purple-700 font-medium text-sm mb-2">Monthly Active</p>
                 <p className="text-3xl font-bold text-gray-900">{summary.active_last_30_days}</p>
                 <p className="text-xs text-purple-600 mt-2">Last 30 days</p>
@@ -255,12 +257,12 @@ export default function AnalyticsSection() {
                 {data.login_method_breakdown?.map((method, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:border-emerald-300 hover:from-emerald-50 hover:to-gray-100 transition"
+                    className="flex items-center justify-between p-4 bg-linear-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:border-emerald-300 hover:from-emerald-50 hover:to-gray-100 transition"
                   >
                     <span className="text-gray-700 font-medium capitalize text-sm">
                       {method.method === "unknown" ? "Legacy/Other" : method.method}
                     </span>
-                    <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">{method.count}</span>
+                    <span className="text-2xl font-bold bg-linear-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">{method.count}</span>
                   </div>
                 ))}
               </div>
@@ -274,7 +276,7 @@ export default function AnalyticsSection() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                    <tr className="bg-linear-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Method</th>
@@ -287,7 +289,7 @@ export default function AnalyticsSection() {
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{login.email}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{login.name}</td>
                         <td className="px-6 py-4 text-sm">
-                          <span className="inline-block px-3 py-1 bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-medium capitalize">
+                          <span className="inline-block px-3 py-1 bg-linear-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-medium capitalize">
                             {login.method}
                           </span>
                         </td>

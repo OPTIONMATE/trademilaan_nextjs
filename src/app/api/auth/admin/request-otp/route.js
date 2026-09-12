@@ -4,10 +4,10 @@ import User from "@/app/lib/models/User";
 import { transporter } from "@/app/lib/mailer";
 import {
   isValidEmail,
-  generateSecureOTP,
   incrementOTPAttempt,
   isOTPBlocked,
 } from "@/app/lib/validators";
+import { issueOTP, removePendingOTPs, OTP_PURPOSES } from "@/app/lib/otpService";
 
 export async function POST(req) {
   try {
@@ -49,25 +49,23 @@ export async function POST(req) {
     // ✅ SECURITY: Check if email exists (but don't enumerate)
     const existingUser = await User.findOne({ email: normalizedEmail });
 
-    // Generate OTP (using secure crypto)
-    const otp = generateSecureOTP();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    if (!existingUser) {
-      // Create temporary user document to store OTP
-      await User.create({
+    let user = existingUser;
+    if (!user) {
+      // Create temporary user document to store signup state
+      user = await User.create({
         email: normalizedEmail,
-        emailOtp: otp,
-        emailOtpExpiry: otpExpiry,
         role: "admin",
         password: null,
       });
-    } else {
-      // Update existing user OTP
-      existingUser.emailOtp = otp;
-      existingUser.emailOtpExpiry = otpExpiry;
-      await existingUser.save();
     }
+
+    // Issue an ADMIN_SIGNUP OTP (isolated from other OTP purposes)
+    const otp = await issueOTP({
+      userId: user._id,
+      email: normalizedEmail,
+      purpose: OTP_PURPOSES.ADMIN_SIGNUP,
+      ttlMinutes: 5, // admin OTPs expire in 5 minutes (unchanged)
+    });
 
     // Send OTP Email
     const mailFrom =
@@ -156,7 +154,12 @@ export async function POST(req) {
     } catch (mailError) {
       console.error("Failed to send OTP email:", mailError.message);
 
-      // Clean up if email fails
+      // Clean up if email fails — remove any active admin OTP and, if we
+      // created the temp user, delete it too.
+      await removePendingOTPs({
+        userId: user._id,
+        purpose: OTP_PURPOSES.ADMIN_SIGNUP,
+      });
       if (!existingUser) {
         await User.deleteOne({ email: normalizedEmail });
       }

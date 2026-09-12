@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
-import { generateSecureOTP, isValidEmail } from "@/app/lib/validators";
+import { isValidEmail } from "@/app/lib/validators";
 import { sendOtpMail } from "@/app/lib/mailer";
+import { issueOTP, findLatestPendingOTP, OTP_PURPOSES } from "@/app/lib/otpService";
 
 // Resend OTP for pending registration (60s cooldown).
 export async function POST(req) {
@@ -45,9 +45,11 @@ export async function POST(req) {
     }
 
     // 60-second cooldown between resends
-    const lastSent = user.emailOtpExpiry
-      ? new Date(user.emailOtpExpiry.getTime() - 10 * 60 * 1000)
-      : null;
+    const latestOtp = await findLatestPendingOTP({
+      userId: user._id,
+      purpose: OTP_PURPOSES.REGISTRATION,
+    });
+    const lastSent = latestOtp ? latestOtp.createdAt : null;
     if (lastSent && Date.now() - lastSent.getTime() < 60 * 1000) {
       const waitSeconds = Math.ceil(
         (60 * 1000 - (Date.now() - lastSent.getTime())) / 1000
@@ -61,14 +63,13 @@ export async function POST(req) {
       );
     }
 
-    // Generate new OTP
-    const otp = generateSecureOTP();
-    const otpHash = await bcrypt.hash(otp, 10);
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    user.emailOtp = otpHash;
-    user.emailOtpExpiry = otpExpiry;
-    await user.save();
+    // Generate new OTP (invalidates the previous pending registration OTP)
+    const otp = await issueOTP({
+      userId: user._id,
+      email: normalizedEmail,
+      purpose: OTP_PURPOSES.REGISTRATION,
+      ttlMinutes: 10, // 10 minutes (unchanged)
+    });
 
     // Send OTP email — await so failures are reported
     try {

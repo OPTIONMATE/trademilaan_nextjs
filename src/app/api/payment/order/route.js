@@ -4,6 +4,7 @@ import Plan from "@/app/lib/models/Plan";
 import Coupon from "@/app/lib/models/Coupon";
 import Payment from "@/app/lib/models/Payment";
 import { verifyToken } from "@/app/lib/jwt";
+import { isValidObjectId } from "@/app/lib/validators";
 import { cookies } from "next/headers";
 
 export async function POST(request) {
@@ -15,6 +16,14 @@ export async function POST(request) {
     if (!planId) {
       return NextResponse.json(
         { error: "Plan is required" },
+        { status: 400 },
+      );
+    }
+
+    // ✅ SECURITY: Validate ObjectId before passing to Plan.findById
+    if (!isValidObjectId(String(planId).trim())) {
+      return NextResponse.json(
+        { error: "Invalid plan" },
         { status: 400 },
       );
     }

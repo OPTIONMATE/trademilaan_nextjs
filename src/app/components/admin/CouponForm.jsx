@@ -309,7 +309,7 @@ export default function CouponForm({ coupon = null, onSubmit, onCancel }) {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-lime-500 to-lime-600 text-white font-semibold rounded-xl hover:from-lime-600 hover:to-lime-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-linear-to-r from-lime-500 to-lime-600 text-white font-semibold rounded-xl hover:from-lime-600 hover:to-lime-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading
               ? coupon

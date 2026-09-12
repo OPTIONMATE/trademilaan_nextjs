@@ -2,6 +2,7 @@ import connectDB from "@/app/lib/db";
 import Payment from "@/app/lib/models/Payment";
 import Plan from "@/app/lib/models/Plan";
 import { verifyToken } from "@/app/lib/jwt";
+import { derivePurchasedDurationDays } from "@/app/lib/planValidity";
 import { cookies } from "next/headers";
 
 const normalizeText = (value) => String(value || "").trim();
@@ -121,12 +122,22 @@ export async function GET(req) {
           ? payment.planType
           : inferredPlan?.type || "Unknown";
 
+      // Purchased-duration display: snapshot first; for legacy records that
+      // predate the snapshot, derive from STORED timestamps only (never the
+      // current Plan config, never "today").
+      const purchasedPlanDuration =
+        Number(payment?.planDuration) > 0
+          ? Number(payment.planDuration)
+          : (derivePurchasedDurationDays(payment?.paidAt, payment?.expiresAt) ??
+            null);
+
       return {
         ...payment,
         planId: payment.planId || resolvedPlanId,
         resolvedPlanId,
         planName: resolvedPlanName,
         planType: resolvedPlanType,
+        planDuration: purchasedPlanDuration,
       };
     });
 

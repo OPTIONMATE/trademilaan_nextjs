@@ -11,6 +11,7 @@ import {
 } from "@/app/lib/validators";
 import { serializeAuthUser } from "@/app/lib/serializers";
 import { setSecureCookie } from "@/app/lib/apiHelpers";
+import { verifyOTP, OTP_PURPOSES } from "@/app/lib/otpService";
 
 export async function POST(req) {
   try {
@@ -76,15 +77,24 @@ export async function POST(req) {
       );
     }
 
-    // Verify OTP (also trim stored OTP for comparison)
-    const storedOtp = user.emailOtp ? user.emailOtp.toString().trim() : null;
-    if (storedOtp !== trimmedOtp) {
-      return NextResponse.json({ error: "Invalid OTP" }, { status: 401 });
-    }
+    // Verify the ADMIN_SIGNUP OTP (purpose-scoped, single-use)
+    const result = await verifyOTP({
+      userId: user._id,
+      purpose: OTP_PURPOSES.ADMIN_SIGNUP,
+      otp: trimmedOtp,
+    });
 
-    // Check if OTP is expired
-    if (!user.emailOtpExpiry || user.emailOtpExpiry < new Date()) {
-      return NextResponse.json({ error: "OTP has expired" }, { status: 400 });
+    if (!result.valid) {
+      if (result.reason === "expired") {
+        return NextResponse.json({ error: "OTP has expired" }, { status: 400 });
+      }
+      if (result.reason === "attempts_exceeded") {
+        return NextResponse.json(
+          { error: "Too many attempts. Please try again later." },
+          { status: 429 }
+        );
+      }
+      return NextResponse.json({ error: "Invalid OTP" }, { status: 401 });
     }
 
     // Hash password

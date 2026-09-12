@@ -10,11 +10,6 @@ export async function generateInvoicePDF(invoiceData) {
     return `${day}/${month}/${year}`;
   }
 
-  // Default startDate: today, endDate: one month from today
-  const today = new Date();
-  const oneMonthLater = new Date(today);
-  oneMonthLater.setMonth(today.getMonth() + 1);
-
   const {
     clientName = "Client Name",
     email = "client@email.com",
@@ -27,10 +22,18 @@ export async function generateInvoicePDF(invoiceData) {
     subtotal = "Rs. 4,399",
     total = "Rs. 12,000",
     qty = "1",
-    startDate = formatDate(today),
-    endDate = formatDate(oneMonthLater),
+    startDate = "",
+    endDate = "",
     planName = "Plan Name",
   } = invoiceData;
+
+  // Dates may arrive as Date objects or pre-formatted DD/MM/YYYY strings.
+  // NO synthetic defaults: the caller must pass the stored service period so
+  // this PDF renderer can never silently bake in "today + 1 month".
+  const startDateLabel =
+    startDate instanceof Date ? formatDate(startDate) : startDate;
+  const endDateLabel =
+    endDate instanceof Date ? formatDate(endDate) : endDate;
 
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -243,7 +246,7 @@ export async function generateInvoicePDF(invoiceData) {
     color: pastel.bodyMuted,
   });
 
-  page.drawText(`SERVICE START DATE : ${startDate}`, {
+  page.drawText(`SERVICE START DATE : ${startDateLabel}`, {
     x: 340,
     y: y + lineGap * 4,
     size: 11,
@@ -251,7 +254,7 @@ export async function generateInvoicePDF(invoiceData) {
     color: pastel.bodyMuted,
   });
 
-  page.drawText(`SERVICE END DATE : ${endDate}`, {
+  page.drawText(`SERVICE END DATE : ${endDateLabel}`, {
     x: 340,
     y: y + lineGap * 3,
     size: 11,

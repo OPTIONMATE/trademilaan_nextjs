@@ -35,6 +35,8 @@ export async function POST(req) {
       pan: String,
       planId: String,
       planName: String,
+      planType: String,
+      planDuration: Number,
       razorpay_payment_id: String,
     });
     const Invoice =
@@ -49,18 +51,24 @@ export async function POST(req) {
       );
     }
 
-    // Generate invoice PDF
+    // Generate invoice PDF from the STORED invoice record.
+    // This is a read operation: old invoices keep their historical
+    // start/end dates; new invoices use their stored (correct) dates.
+    // Never recalculate from today / current Plan.duration.
     const invoiceData = {
       clientName: invoice.clientName,
       email: invoice.email,
       mobile: invoice.phone,
       state: invoice.state || "",
       pan: invoice.pan || "",
+      service: invoice.planName || "",
       planName: invoice.planName || "",
       price: `Rs. ${Math.round(invoice.amount / 1.18)}`,
       gst: `Rs. ${invoice.amount - Math.round(invoice.amount / 1.18)}`,
       subtotal: `Rs. ${Math.round(invoice.amount / 1.18)}`,
       total: `Rs. ${invoice.amount}`,
+      startDate: invoice.startDate,
+      endDate: invoice.endDate,
     };
 
     const pdfBuffer = await generateInvoicePDF(invoiceData);

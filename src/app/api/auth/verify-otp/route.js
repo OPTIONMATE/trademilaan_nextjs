@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
 import { signToken } from "@/app/lib/jwt";
 import { serializeAuthUser } from "@/app/lib/serializers";
 import { setSecureCookie } from "@/app/lib/apiHelpers";
 import { isValidEmail, isValidOTP, incrementOTPAttempt, isOTPBlocked, resetOTPAttempts } from "@/app/lib/validators";
+import { verifyOTP, OTP_PURPOSES } from "@/app/lib/otpService";
 
 // Step 2 of registration: verify OTP, mark user verified, log them in.
 export async function POST(req) {
@@ -64,25 +64,40 @@ export async function POST(req) {
       );
     }
 
-    // Check OTP expiry
-    if (!user.emailOtpExpiry || new Date() > user.emailOtpExpiry) {
-      return NextResponse.json(
-        { error: "Verification code expired. Please request a new one." },
-        { status: 400 }
-      );
-    }
+    // Verify the REGISTRATION OTP (purpose-scoped, single-use)
+    const result = await verifyOTP({
+      userId: user._id,
+      purpose: OTP_PURPOSES.REGISTRATION,
+      otp,
+    });
 
-    // Verify OTP
-    const otpMatches = await bcrypt.compare(otp, user.emailOtp);
-    if (!otpMatches) {
-      incrementOTPAttempt(normalizedEmail);
+    if (!result.valid) {
+      if (result.reason === "attempts_exceeded") {
+        return NextResponse.json(
+          { error: "Too many failed attempts. Please request a new code." },
+          { status: 429 }
+        );
+      }
+
+      // A missing record is treated like an expired code (request a new one).
+      if (result.reason === "expired" || result.reason === "not_found") {
+        return NextResponse.json(
+          { error: "Verification code expired. Please request a new one." },
+          { status: 400 }
+        );
+      }
+
+      // mismatch / already_used
+      if (result.reason === "mismatch") {
+        incrementOTPAttempt(normalizedEmail);
+      }
       return NextResponse.json(
         { error: "Invalid verification code" },
         { status: 400 }
       );
     }
 
-    // OTP verified — mark user as verified and clear OTP fields
+    // OTP verified — mark user as verified and clear legacy OTP fields
     user.emailVerified = true;
     user.emailOtp = undefined;
     user.emailOtpExpiry = undefined;

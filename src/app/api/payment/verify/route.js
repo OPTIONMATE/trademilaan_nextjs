@@ -6,9 +6,15 @@ import { sendInvoicePDFMail } from "@/app/lib/mailer";
 import Payment from "@/app/lib/models/Payment";
 import Coupon from "@/app/lib/models/Coupon";
 import Plan from "@/app/lib/models/Plan";
+import {
+  resolvePlanDurationDays,
+  computeServiceStartDate,
+  computeServiceExpiry,
+} from "@/app/lib/planValidity";
 import { verifyToken } from "@/app/lib/jwt";
 import { cookies } from "next/headers";
 import { createPerIpRateLimiter } from "@/app/lib/rateLimiter";
+import { isValidObjectId } from "@/app/lib/validators";
 import { isValidEmail } from "@/app/lib/validators";
 
 export async function POST(request) {
@@ -178,6 +184,37 @@ export async function POST(request) {
       .toLowerCase();
     const normalizedPlanId = String(orderPlanId || "").trim();
 
+    if (!isValidObjectId(normalizedPlanId)) {
+      return NextResponse.json(
+        { error: "Selected plan is invalid." },
+        { status: 400 },
+      );
+    }
+
+    // ✅ SECURITY: Resolve the purchased service/plan from the DATABASE
+    // (the source of truth for validity). NEVER trust a client-sent duration.
+    const selectedPlan = await Plan.findById(normalizedPlanId)
+      .select("name type duration isActive")
+      .lean();
+
+    if (!selectedPlan || selectedPlan.isActive === false) {
+      return NextResponse.json(
+        { error: "Selected plan is unavailable. Please contact support." },
+        { status: 400 },
+      );
+    }
+
+    let resolvedPlanDurationDays;
+    try {
+      resolvedPlanDurationDays = resolvePlanDurationDays(selectedPlan);
+    } catch (err) {
+      console.warn("PLAN VALIDITY ERROR:", err.message);
+      return NextResponse.json(
+        { error: "Selected plan has invalid validity configuration." },
+        { status: 400 },
+      );
+    }
+
     // Final guard against duplicate active subscriptions for the same plan.
     // This prevents duplicates even if multiple checkouts are attempted quickly.
     const existingActiveSubscription = await Payment.findOne({
@@ -200,26 +237,10 @@ export async function POST(request) {
       );
     }
 
-    const normalizedPlanType = String(orderPlanType || "").trim().toLowerCase();
-    const selectedPlan = await Plan.findById(orderPlanId).select("duration").lean();
-    const resolvedPlanDurationDays =
-      Number.isInteger(Number(selectedPlan?.duration)) &&
-      Number(selectedPlan.duration) > 0
-        ? Number(selectedPlan.duration)
-        : normalizedPlanType === "weekly"
-          ? 7
-          : normalizedPlanType === "quarterly"
-            ? 90
-            : normalizedPlanType === "halfyearly"
-              ? 182
-              : normalizedPlanType === "yearly"
-                ? 365
-                : 30;
-
-    // Set paidAt to now, expiresAt from selected plan duration
-    const paidAt = new Date();
-    const expiresAt = new Date(paidAt);
-    expiresAt.setDate(expiresAt.getDate() + resolvedPlanDurationDays);
+    // Set paidAt to payment completion; expiresAt = end of the final valid
+    // calendar day (same instant as the invoice end date). Day-based, inclusive.
+    const paidAt = computeServiceStartDate(new Date());
+    const expiresAt = computeServiceExpiry(paidAt, resolvedPlanDurationDays);
 
     const payment = new Payment({
       razorpay_order_id,
@@ -229,6 +250,7 @@ export async function POST(request) {
       planId: orderPlanId,
       planName: orderPlanName,
       planType: orderPlanType || null,
+      planDuration: resolvedPlanDurationDays,
       name,
       email: normalizedEmail,
       phone,
@@ -262,42 +284,49 @@ export async function POST(request) {
       pan: String,
       planId: String,
       planName: String,
+      planType: String,
+      planDuration: Number,
       razorpay_payment_id: String,
     });
     const Invoice =
       mongoose.models.Invoice || mongoose.model("Invoice", InvoiceSchema);
 
-    // Create invoice record with 1 month validity
-    const invoiceStartDate = new Date();
-    const invoiceEndDate = new Date(invoiceStartDate);
-    invoiceEndDate.setMonth(invoiceEndDate.getMonth() + 1);
-
+    // Invoice record: start = payment date; end = same instant as
+    // Payment.expiresAt (end of final valid calendar day). Stored snapshot —
+    // never recalculated on read, never based on today's date.
     await Invoice.create({
       clientName: name,
       amount: safeAmount,
-      startDate: invoiceStartDate,
-      endDate: invoiceEndDate,
+      startDate: paidAt,
+      endDate: expiresAt,
       email: normalizedEmail,
       phone,
       state: state || "",
       pan: pan || panNumber || "",
       planId: orderPlanId,
       planName: orderPlanName,
+      planType: orderPlanType || null,
+      planDuration: resolvedPlanDurationDays,
       razorpay_payment_id,
     });
 
-    // Generate invoice PDF (in memory, not saved to disk)
+    // Generate invoice PDF (in memory, not saved to disk).
+    // The PDF is a renderer: it gets the stored service dates, it does NOT
+    // calculate validity from today.
     const invoiceData = {
       clientName: name,
       email,
       mobile: phone,
       state: state || "",
       pan: pan || panNumber || "",
-      planName: planName || "",
+      service: orderPlanName || "",
+      planName: orderPlanName || "",
       price: `Rs. ${Math.round(safeAmount / 1.18)}`,
       gst: `Rs. ${safeAmount - Math.round(safeAmount / 1.18)}`,
       subtotal: `Rs. ${Math.round(safeAmount / 1.18)}`,
       total: `Rs. ${safeAmount}`,
+      startDate: paidAt,
+      endDate: expiresAt,
     };
     const invoicePDFBuffer = await generateInvoicePDF(invoiceData);
 
@@ -319,6 +348,9 @@ export async function POST(request) {
       planId: orderPlanId,
       planName: orderPlanName,
       planType: orderPlanType || null,
+      planDuration: resolvedPlanDurationDays,
+      paidAt,
+      expiresAt,
       name,
       email,
       phone,

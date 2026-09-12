@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
-import { generateSecureOTP } from "@/app/lib/validators";
 import { sendOtpMail } from "@/app/lib/mailer";
 import { isValidEmail, sanitizeString } from "@/app/lib/validators";
+import { issueOTP, OTP_PURPOSES } from "@/app/lib/otpService";
 
 // Step 1 of registration: validate inputs, create unverified user, send OTP.
 // The user is NOT logged in yet — they must verify OTP first.
@@ -61,30 +61,31 @@ export async function POST(req) {
     // Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // Generate OTP (6-digit, expires in 10 minutes)
-    const otp = generateSecureOTP();
-    const otpHash = await bcrypt.hash(otp, 10);
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
+    let user;
     if (existingUser) {
-      // Unverified user re-registering — update their details and OTP
+      // Unverified user re-registering — update their details
       existingUser.password = hash;
       existingUser.username = sanitizedUsername;
-      existingUser.emailOtp = otpHash;
-      existingUser.emailOtpExpiry = otpExpiry;
       await existingUser.save();
+      user = existingUser;
     } else {
       // Create new unverified user
-      await User.create({
+      user = await User.create({
         email: normalizedEmail,
         password: hash,
         username: sanitizedUsername,
         role: "user",
         emailVerified: false,
-        emailOtp: otpHash,
-        emailOtpExpiry: otpExpiry,
       });
     }
+
+    // Issue a REGISTRATION OTP (isolated from other OTP purposes).
+    const otp = await issueOTP({
+      userId: user._id,
+      email: normalizedEmail,
+      purpose: OTP_PURPOSES.REGISTRATION,
+      ttlMinutes: 10, // registration OTPs expire in 10 minutes (unchanged)
+    });
 
     // Send OTP email — await so failures are reported to the user
     try {

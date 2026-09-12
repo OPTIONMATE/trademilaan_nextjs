@@ -28,8 +28,9 @@ import {
 
 const formatINR = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-// Analytics amounts are stored in paise (matches the existing Analytics display).
-const formatINRFromPaise = (value) => formatINR(Number(value || 0) / 100);
+// Payment.amount is stored in RUPEES (see /api/payment/verify: safeAmount =
+// serverPricing.finalAmount = plan.price in rupees; only the Razorpay order
+// itself uses paise). Display backend sums directly — never divide by 100.
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -168,14 +169,14 @@ export default function AdminOverviewPage() {
             />
             <AdminStatCard
               label="Total Revenue"
-              value={formatINRFromPaise(data.summary.total_revenue)}
+              value={formatINR(data.summary.total_revenue)}
               sub="All time"
               icon={IndianRupee}
               tone="success"
             />
             <AdminStatCard
               label="Revenue This Month"
-              value={formatINRFromPaise(data.summary.this_month_revenue)}
+              value={formatINR(data.summary.this_month_revenue)}
               sub="Current calendar month"
               icon={TrendingUp}
               tone="lime"

@@ -1265,6 +1265,20 @@ export default function ServiceAgreement({
                   </p>
                 </div>
                 <div className="p-8 flex flex-col items-center justify-center">
+                  {/*
+                    Service Provider (RA) signature — fixed, canonical asset at
+                    /public/ra-signature.jpeg. It is rendered unconditionally
+                    while the client reviews the agreement (before E-Sign), so it
+                    never depends on the client's signatureData or signatureTab.
+                    The client's own signature area above stays empty until the
+                    client completes E-Sign.
+                  */}
+                  <div
+                    className="mb-2 flex items-center justify-center"
+                    style={{ width: 120, height: 60 }}
+                  >
+                    <RASignature />
+                  </div>
                   <p className="text-xs font-bold text-center mt-1">
                     Signature (RA)
                   </p>

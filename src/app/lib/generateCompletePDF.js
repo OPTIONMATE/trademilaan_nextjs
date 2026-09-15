@@ -1296,17 +1296,22 @@ export async function generateCompleteAgreementPDF(agreementData) {
     // filesystem reads that are unreliable in serverless/production runtimes.
     let raImageDrawn = false;
     try {
+      console.log("[PDF-DEBUG] RA_SIGNATURE_BASE64 typeof/length:", typeof RA_SIGNATURE_BASE64, RA_SIGNATURE_BASE64?.length);
       const raSigBuffer = Buffer.from(RA_SIGNATURE_BASE64, "base64");
+      console.log("[PDF-DEBUG] raSigBuffer length:", raSigBuffer?.length);
       if (raSigBuffer && raSigBuffer.length > 0) {
         const raSigImage = await pdfDoc.embedJpg(raSigBuffer);
+        console.log("[PDF-DEBUG] embedJpg OK");
         // Maintain aspect ratio, max width 120, max height raSigH
         let jpgDims = raSigImage.scale(1);
+        console.log("[PDF-DEBUG] jpgDims:", jpgDims.width, jpgDims.height, "raSigH:", raSigH, "colWidth:", colWidth);
         let scale = Math.min(120 / jpgDims.width, raSigH / jpgDims.height, 1);
         let drawW = jpgDims.width * scale;
         let drawH = jpgDims.height * scale;
         let drawX = tableLeft + colWidth + (colWidth - drawW) / 2;
         // Move signature further down by increasing offset (was +8, now +28)
         let drawY = sigAreaTop + (sigAreaHeight - drawH) / 2;
+        console.log("[PDF-DEBUG] draw coords:", { drawX, drawY, drawW, drawH, sigAreaTop, sigAreaHeight, tableTop, tableLeft, pageHeight });
         currentPage.drawImage(raSigImage, {
           x: drawX,
           y: drawY,
@@ -1314,10 +1319,14 @@ export async function generateCompleteAgreementPDF(agreementData) {
           height: drawH,
         });
         raImageDrawn = true;
+        console.log("[PDF-DEBUG] raImageDrawn = true, currentPage index:", pdfDoc.getPages().indexOf(currentPage), "of", pdfDoc.getPageCount());
+      } else {
+        console.log("[PDF-DEBUG] raSigBuffer empty, skipping");
       }
     } catch (err) {
       console.error("[PDF] Failed to embed RA signature:", err);
     }
+    console.log("[PDF-DEBUG] FINAL raImageDrawn:", raImageDrawn);
     // Only draw line if image was not drawn
     if (!raImageDrawn) {
       currentPage.drawLine({

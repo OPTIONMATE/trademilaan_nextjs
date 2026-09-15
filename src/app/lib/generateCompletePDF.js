@@ -1,7 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import fs from "fs";
-import path from "path";
 import { computeFinalServiceDate } from "./planValidity";
+import { RA_SIGNATURE_BASE64 } from "./raSignatureData";
 
 function formatSignedDateDisplay(input) {
   if (input === undefined || input === null || input === "") {
@@ -1291,16 +1290,13 @@ export async function generateCompleteAgreementPDF(agreementData) {
     let raSigW = colWidth - 2 * cellPaddingX;
     let raSigH = sigAreaHeight - 10;
     // --- RA signature (right) ---
-    // Static RA (Service Provider) signature asset. It lives in /public so the
-    // same file is served to the browser (RASignature.jsx) and read here at
-    // render time. RA_SIGNATURE_PATH can override it when deployed elsewhere.
-    const raSignaturePath =
-      process.env.RA_SIGNATURE_PATH ||
-      path.join(process.cwd(), "public", "ra-signature.jpeg");
-    let raSigBuffer = null;
+    // Base64-embedded RA (Service Provider) signature asset. It lives in
+    // raSignatureData.js so the same file is served to the browser
+    // (RASignature.jsx) and embedded here at render time without relying on
+    // filesystem reads that are unreliable in serverless/production runtimes.
     let raImageDrawn = false;
     try {
-      raSigBuffer = fs.readFileSync(raSignaturePath);
+      const raSigBuffer = Buffer.from(RA_SIGNATURE_BASE64, "base64");
       if (raSigBuffer && raSigBuffer.length > 0) {
         const raSigImage = await pdfDoc.embedJpg(raSigBuffer);
         // Maintain aspect ratio, max width 120, max height raSigH
@@ -1320,7 +1316,7 @@ export async function generateCompleteAgreementPDF(agreementData) {
         raImageDrawn = true;
       }
     } catch (err) {
-      // If image not found, fallback below
+      console.error("[PDF] Failed to embed RA signature:", err);
     }
     // Only draw line if image was not drawn
     if (!raImageDrawn) {

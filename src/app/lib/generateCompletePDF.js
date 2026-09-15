@@ -1186,126 +1186,88 @@ export async function generateCompleteAgreementPDF(agreementData) {
     });
 
     // --- SIGNATURES (centered in upper cell) ---
-    // The client signature and the Service Provider (RA) signature are rendered
-    // by two INDEPENDENT routines below. The client's chosen signing method
-    // (typed / draw / upload) only ever affects the CLIENT cell: it can never
-    // move, hide, clip or skip the RA signature, and a client-side failure can
-    // never prevent the RA signature from being drawn.
+    // Calculate signature image area
     const sigAreaTop = tableTop - rowHeight;
     const sigAreaHeight = rowHeight - 28;
-    // Identical ceiling for both cells (unchanged from the original layout).
-    const sigMaxHeight = sigAreaHeight - 10;
-    const sigMaxWidth = 120;
-
-    // Identify the real image type from magic bytes. The stored client
-    // signature may be a PNG data URL (typed/draw) or a hosted URL (upload),
-    // so a prefix/extension cannot be trusted.
-    const detectImageKind = (buffer) => {
-      if (!buffer || buffer.length < 4) return null;
-      if (
-        buffer[0] === 0x89 &&
-        buffer[1] === 0x50 &&
-        buffer[2] === 0x4e &&
-        buffer[3] === 0x47
-      ) {
-        return "png";
-      }
-      if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-        return "jpg";
-      }
-      return null;
-    };
-
-    // Resolve a stored signature value into raw bytes. Handles base64 data
-    // URLs (typed/draw), raw base64, and http(s) URLs (the upload tab stores a
-    // Cloudinary URL, which previously failed because a URL was fed straight
-    // into Buffer.from(..., "base64")).
-    const MAX_SIGNATURE_BYTES = 5 * 1024 * 1024;
-    const resolveSignatureBytes = async (value) => {
-      const raw = typeof value === "string" ? value.trim() : "";
-      if (!raw) return null;
-      let bytes;
-      if (/^https?:\/\//i.test(raw)) {
-        const response = await fetch(raw, {
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!response.ok) {
-          throw new Error(`signature URL responded with HTTP ${response.status}`);
+    // Client signature (left)
+    let clientSigW = colWidth - 2 * cellPaddingX;
+    let clientSigH = sigAreaHeight - 10;
+    let clientSigX =
+      tableLeft +
+      cellPaddingX +
+      (clientSigW > 120 ? (clientSigW - 120) / 2 : 0);
+    let clientSigY = sigAreaTop + (sigAreaHeight - clientSigH) / 2 + 8;
+    let hasClientSignature = false;
+    if (signatureData && typeof signatureData === "string") {
+      try {
+        let imageBuffer = null;
+        console.log("[PDF] signatureData type:", typeof signatureData);
+        if (signatureData.startsWith("data:image")) {
+          const matches = signatureData.match(/base64,(.+)/);
+          if (matches && matches[1]) {
+            imageBuffer = Buffer.from(matches[1], "base64");
+            console.log(
+              "[PDF] Extracted base64 from data URL, buffer length:",
+              imageBuffer.length,
+            );
+          } else {
+            console.error("[PDF] No base64 match in data URL signatureData");
+          }
+        } else {
+          imageBuffer = Buffer.from(signatureData, "base64");
+          console.log(
+            "[PDF] Used raw base64, buffer length:",
+            imageBuffer.length,
+          );
         }
-        bytes = Buffer.from(await response.arrayBuffer());
-      } else if (raw.startsWith("data:")) {
-        const match = raw.match(/^data:[^;,]*;base64,(.+)$/s);
-        if (!match || !match[1]) throw new Error("malformed base64 data URL");
-        bytes = Buffer.from(match[1], "base64");
-      } else {
-        bytes = Buffer.from(raw, "base64");
+        if (!imageBuffer || imageBuffer.length === 0) {
+          console.error("[PDF] signature imageBuffer is empty or invalid");
+        } else {
+          const signatureImage = await pdfDoc.embedPng(imageBuffer);
+          // Maintain aspect ratio, max width 120, max height clientSigH
+          let pngDims = signatureImage.scale(1);
+          let scale = Math.min(
+            120 / pngDims.width,
+            clientSigH / pngDims.height,
+            1,
+          );
+          let drawW = pngDims.width * scale;
+          let drawH = pngDims.height * scale;
+          let drawX = tableLeft + (colWidth - drawW) / 2;
+          let drawY = sigAreaTop + (sigAreaHeight - drawH) / 2 + 8;
+          currentPage.drawImage(signatureImage, {
+            x: drawX,
+            y: drawY,
+            width: drawW,
+            height: drawH,
+          });
+          hasClientSignature = true;
+          console.log(
+            "[PDF] Client signature image drawn at",
+            drawX,
+            drawY,
+            drawW,
+            drawH,
+          );
+        }
+      } catch (imgErr) {
+        console.error("[PDF] Error embedding client signature:", imgErr);
+        // Draw placeholder line
+        currentPage.drawLine({
+          start: {
+            x: tableLeft + cellPaddingX,
+            y: sigAreaTop + sigAreaHeight / 2,
+          },
+          end: {
+            x: tableLeft + colWidth - cellPaddingX,
+            y: sigAreaTop + sigAreaHeight / 2,
+          },
+          color: rgb(0, 0, 0),
+          thickness: 1.2,
+        });
       }
-      if (bytes.length > MAX_SIGNATURE_BYTES) {
-        throw new Error("signature image exceeds the allowed size");
-      }
-      return bytes;
-    };
-
-    // Embed + centre one signature inside its own cell. Self-contained so the
-    // caller can isolate each signature with its own error handling.
-    const drawSignatureInCell = async ({
-      value,
-      bytes: providedBytes,
-      cellX,
-      cellWidth,
-      cellTop,
-      cellHeight,
-      verticalOffset = 0,
-    }) => {
-      const bytes = providedBytes || (await resolveSignatureBytes(value));
-      if (!bytes || bytes.length === 0) throw new Error("no signature data");
-      const kind = detectImageKind(bytes);
-      if (!kind) throw new Error("unrecognised signature image format");
-      const image =
-        kind === "png"
-          ? await pdfDoc.embedPng(bytes)
-          : await pdfDoc.embedJpg(bytes);
-      const dims = image.scale(1);
-      if (!dims || !dims.width || !dims.height) {
-        throw new Error("embedded signature image has no dimensions");
-      }
-      const scale = Math.min(
-        sigMaxWidth / dims.width,
-        sigMaxHeight / dims.height,
-        1,
-      );
-      const drawW = dims.width * scale;
-      const drawH = dims.height * scale;
-      const drawX = cellX + (cellWidth - drawW) / 2;
-      const drawY = cellTop + verticalOffset + (cellHeight - drawH) / 2;
-      currentPage.drawImage(image, {
-        x: drawX,
-        y: drawY,
-        width: drawW,
-        height: drawH,
-      });
-      return { kind, drawX, drawY, drawW, drawH, bytes: bytes.length };
-    };
-
-    // 1) CLIENT signature (left cell). Isolated from the RA rendering below.
-    try {
-      const drawn = await drawSignatureInCell({
-        value: signatureData,
-        cellX: tableLeft,
-        cellWidth: colWidth,
-        cellTop: sigAreaTop,
-        cellHeight: sigAreaHeight,
-        verticalOffset: 8,
-      });
-      console.log(
-        `[PDF] Client signature rendered (${drawn.kind}, ${drawn.bytes} bytes) at x=${drawn.drawX} y=${drawn.drawY}`,
-      );
-    } catch (clientErr) {
-      console.error(
-        "[PDF] Client signature could not be rendered:",
-        clientErr.message,
-      );
-      // Ruled placeholder line — CLIENT cell only.
+    }
+    if (!hasClientSignature) {
       currentPage.drawLine({
         start: {
           x: tableLeft + cellPaddingX,
@@ -1320,56 +1282,43 @@ export async function generateCompleteAgreementPDF(agreementData) {
       });
     }
 
-    // 2) SERVICE PROVIDER (RA) signature (right cell). Static asset, rendered
-    //    UNCONDITIONALLY: it does not depend on the client's signing method, on
-    //    the client signature's dimensions, or on the client block above having
-    //    succeeded. Failures here are logged loudly instead of being swallowed.
-    const raSignatureCandidates = () => {
-      const candidates = [];
-      if (process.env.RA_SIGNATURE_PATH) {
-        candidates.push(process.env.RA_SIGNATURE_PATH);
-      }
-      candidates.push(path.join(process.cwd(), "public", "ra-signature.jpeg"));
-      return candidates;
-    };
-
-    const readRASignatureAsset = () => {
-      const tried = [];
-      for (const candidate of raSignatureCandidates()) {
-        tried.push(candidate);
-        try {
-          const buffer = fs.readFileSync(candidate);
-          if (buffer && buffer.length > 0) {
-            return { buffer, source: candidate };
-          }
-          console.error(`[PDF] RA signature asset is empty at ${candidate}`);
-        } catch (readErr) {
-          console.error(
-            `[PDF] RA signature asset unreadable at ${candidate}: ${readErr.message}`,
-          );
-        }
-      }
-      throw new Error(
-        `RA signature asset not found. Tried: ${tried.join(" | ")} (cwd: ${process.cwd()})`,
-      );
-    };
-
+    // RA signature (right)
+    let raSigW = colWidth - 2 * cellPaddingX;
+    let raSigH = sigAreaHeight - 10;
+    // --- RA signature (right) ---
+    // Static RA (Service Provider) signature asset. It lives in /public so the
+    // same file is served to the browser (RASignature.jsx) and read here at
+    // render time. RA_SIGNATURE_PATH can override it when deployed elsewhere.
+    const raSignaturePath =
+      process.env.RA_SIGNATURE_PATH ||
+      path.join(process.cwd(), "public", "ra-signature.jpeg");
+    let raSigBuffer = null;
+    let raImageDrawn = false;
     try {
-      const { buffer: raSignatureBuffer, source: raSignatureSource } =
-        readRASignatureAsset();
-      const drawn = await drawSignatureInCell({
-        bytes: raSignatureBuffer,
-        cellX: tableLeft + colWidth,
-        cellWidth: colWidth,
-        cellTop: sigAreaTop,
-        cellHeight: sigAreaHeight,
-      });
-      console.log(
-        `[PDF] RA signature rendered (${drawn.kind}, ${drawn.bytes} bytes) from ${raSignatureSource}`,
-      );
-    } catch (raErr) {
-      console.error("[PDF] RA signature could not be rendered:", raErr.message);
-      // Ruled placeholder line — RA cell only.
+      raSigBuffer = fs.readFileSync(raSignaturePath);
+      if (raSigBuffer && raSigBuffer.length > 0) {
+        const raSigImage = await pdfDoc.embedJpg(raSigBuffer);
+        // Maintain aspect ratio, max width 120, max height raSigH
+        let jpgDims = raSigImage.scale(1);
+        let scale = Math.min(120 / jpgDims.width, raSigH / jpgDims.height, 1);
+        let drawW = jpgDims.width * scale;
+        let drawH = jpgDims.height * scale;
+        let drawX = tableLeft + colWidth + (colWidth - drawW) / 2;
+        // Move signature further down by increasing offset (was +8, now +28)
+        let drawY = sigAreaTop + (sigAreaHeight - drawH) / 2;
+        currentPage.drawImage(raSigImage, {
+          x: drawX,
+          y: drawY,
+          width: drawW,
+          height: drawH,
+        });
+        raImageDrawn = true;
+      }
+    } catch (err) {
+      // If image not found, fallback below
+    }
+    // Only draw line if image was not drawn
+    if (!raImageDrawn) {
       currentPage.drawLine({
         start: {
           x: tableLeft + colWidth + cellPaddingX,

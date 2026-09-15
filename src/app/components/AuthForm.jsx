@@ -5,12 +5,54 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import GoogleLoginBtn from "./GoogleLoginBtn";
+import { Eye, EyeOff } from "lucide-react";
+
+// Shared styling so both the Login and Register password inputs stay identical.
+const PASSWORD_INPUT_CLASS =
+  "w-full rounded-xl border border-neutral-200 bg-white py-3 pl-4 pr-12 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200";
+
+function LegalLink({ href, children }) {
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="font-semibold text-purple-700 underline decoration-lime-400 decoration-2 underline-offset-4 transition hover:text-neutral-900"
+    >
+      {children}
+    </Link>
+  );
+}
+
+// Accessible password visibility toggle rendered inside the right edge of the input.
+function PasswordVisibilityToggle({ isVisible, onToggle, controls }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={isVisible ? "Hide password" : "Show password"}
+      title={isVisible ? "Hide password" : "Show password"}
+      aria-controls={controls}
+      className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center rounded-r-xl text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black/70"
+    >
+      {isVisible ? (
+        <EyeOff className="h-5 w-5" aria-hidden="true" />
+      ) : (
+        <Eye className="h-5 w-5" aria-hidden="true" />
+      )}
+    </button>
+  );
+}
 
 export default function AuthForm({ type }) {
   const [step, setStep] = useState("form"); // "form" | "otp"
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
@@ -51,6 +93,19 @@ export default function AuthForm({ type }) {
       nextErrors.password = "Password must be at least 8 characters long.";
     }
 
+    if (type === "register") {
+      if (!confirmPassword) {
+        nextErrors.confirmPassword = "Re-enter your password to confirm.";
+      } else if (confirmPassword !== password) {
+        nextErrors.confirmPassword = "Passwords do not match. Please re-enter them.";
+      }
+
+      if (!agreedToTerms) {
+        nextErrors.terms =
+          "Please agree to the Terms & Conditions and acknowledge the Privacy Policy to continue.";
+      }
+    }
+
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -61,6 +116,9 @@ export default function AuthForm({ type }) {
     setFieldErrors({});
 
     if (!validateForm()) return;
+
+    // Consent gate: registration must never proceed until the box is checked.
+    if (type === "register" && !agreedToTerms) return;
 
     setLoading(true);
     try {
@@ -350,29 +408,129 @@ export default function AuthForm({ type }) {
                 )}
               </label>
 
-              <label className="block space-y-2">
-                <span className="text-sm font-semibold text-neutral-800">
+              <div className="block space-y-2">
+                <label
+                  htmlFor={type === "login" ? "login-password" : "register-password"}
+                  className="text-sm font-semibold text-neutral-800"
+                >
                   Password
-                </span>
-                <input
-                  id={type === "login" ? "login-password" : "register-password"}
-                  name="password"
-                  type="password"
-                  placeholder="Enter a strong password"
-                  required
-                  autoComplete={type === "login" ? "current-password" : "new-password"}
-                  aria-invalid={fieldErrors.password ? "true" : undefined}
-                  aria-describedby={fieldErrors.password ? `${type}-password-error` : undefined}
-                  className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm shadow-inner shadow-neutral-100 outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-200"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                </label>
+                <div className="relative">
+                  <input
+                    id={type === "login" ? "login-password" : "register-password"}
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter a strong password"
+                    required
+                    autoComplete={type === "login" ? "current-password" : "new-password"}
+                    aria-invalid={fieldErrors.password ? "true" : undefined}
+                    aria-describedby={fieldErrors.password ? `${type}-password-error` : undefined}
+                    className={PASSWORD_INPUT_CLASS}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <PasswordVisibilityToggle
+                    isVisible={showPassword}
+                    onToggle={() => setShowPassword((visible) => !visible)}
+                    controls={type === "login" ? "login-password" : "register-password"}
+                  />
+                </div>
                 {fieldErrors.password && (
                   <p id={`${type}-password-error`} role="alert" className="text-sm text-red-600">
                     {fieldErrors.password}
                   </p>
                 )}
-              </label>
+              </div>
+
+              {type === "register" && (
+                <div className="block space-y-2">
+                  <label
+                    htmlFor="register-confirm-password"
+                    className="text-sm font-semibold text-neutral-800"
+                  >
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="register-confirm-password"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Re-enter your password"
+                      required
+                      autoComplete="new-password"
+                      aria-invalid={fieldErrors.confirmPassword ? "true" : undefined}
+                      aria-describedby={
+                        fieldErrors.confirmPassword ? "register-confirm-password-error" : undefined
+                      }
+                      className={PASSWORD_INPUT_CLASS}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (fieldErrors.confirmPassword) {
+                          setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                        }
+                      }}
+                    />
+                    <PasswordVisibilityToggle
+                      isVisible={showConfirmPassword}
+                      onToggle={() => setShowConfirmPassword((visible) => !visible)}
+                      controls="register-confirm-password"
+                    />
+                  </div>
+                  {fieldErrors.confirmPassword && (
+                    <p
+                      id="register-confirm-password-error"
+                      role="alert"
+                      className="text-sm text-red-600"
+                    >
+                      {fieldErrors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {type === "login" && (
+                <p className="text-xs leading-relaxed text-neutral-500">
+                  By continuing, you agree to our{" "}
+                  <LegalLink href="/terms-and-condition">Terms &amp; Conditions</LegalLink> and
+                  acknowledge our <LegalLink href="/privacy-policy">Privacy Policy</LegalLink>.
+                </p>
+              )}
+
+              {type === "register" && (
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <input
+                      id="register-terms"
+                      name="termsAccepted"
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => {
+                        setAgreedToTerms(e.target.checked);
+                        if (e.target.checked) {
+                          setFieldErrors((prev) => ({ ...prev, terms: undefined }));
+                        }
+                      }}
+                      aria-invalid={fieldErrors.terms ? "true" : undefined}
+                      aria-describedby={fieldErrors.terms ? "register-terms-error" : undefined}
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-neutral-300 accent-lime-500 text-lime-600 focus:ring-lime-500"
+                    />
+                    <label
+                      htmlFor="register-terms"
+                      className="cursor-pointer text-xs leading-relaxed text-neutral-600"
+                    >
+                      I agree to the <LegalLink href="/terms-and-condition">Terms &amp; Conditions</LegalLink>{" "}
+                      and acknowledge that I have read the{" "}
+                      <LegalLink href="/privacy-policy">Privacy Policy</LegalLink>.
+                    </label>
+                  </div>
+                  {fieldErrors.terms && (
+                    <p id="register-terms-error" role="alert" className="text-sm text-red-600">
+                      {fieldErrors.terms}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <button
                 type="submit"

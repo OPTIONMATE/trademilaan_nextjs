@@ -1286,12 +1286,12 @@ export async function generateCompleteAgreementPDF(agreementData) {
     let raSigW = colWidth - 2 * cellPaddingX;
     let raSigH = sigAreaHeight - 10;
     // --- RA signature (right) ---
-    // Use correct path relative to project root
-    let raSignaturePath = path.join(
-      process.cwd(),
-      "src",
-      "WhatsApp Image 2026-03-05 at 11.24.13 PM.jpeg",
-    );
+    // Static RA (Service Provider) signature asset. It lives in /public so the
+    // same file is served to the browser (RASignature.jsx) and read here at
+    // render time. RA_SIGNATURE_PATH can override it when deployed elsewhere.
+    const raSignaturePath =
+      process.env.RA_SIGNATURE_PATH ||
+      path.join(process.cwd(), "public", "ra-signature.jpeg");
     let raSigBuffer = null;
     let raImageDrawn = false;
     try {

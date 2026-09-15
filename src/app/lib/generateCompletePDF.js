@@ -1122,11 +1122,16 @@ export async function generateCompleteAgreementPDF(agreementData) {
     );
 
     // SIGNATURE SECTION - Two Column Table (Client left, RA right)
+    // The signature table must fit entirely on one page: if there is not
+    // enough room below yPosition, move it to a fresh page FIRST, then
+    // capture tableTop so every dependent coordinate (sigAreaTop, footers,
+    // RA image) belongs to the current page.
     addSpace(20);
     // Table dimensions (taller bottom area for PAN / dates below signature lines)
     const tableWidth = pageWidth - 2 * margin;
     const colWidth = tableWidth / 2;
     const tableHeight = 185;
+    if (yPosition - tableHeight < margin) addNewPage();
     const tableTop = yPosition;
     const tableLeft = margin;
     const rowHeight = tableHeight / 2;

@@ -1,7 +1,37 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, RefreshCw, Search, UserRound, Mail, Phone, IdCard, Calendar, CircleCheck } from "lucide-react";
+import {
+  Download,
+  UserRound,
+  Mail,
+  Phone,
+  IdCard,
+  Calendar,
+  CircleCheck,
+  Users,
+} from "lucide-react";
+import AdminSection from "./ui/AdminSection";
+import AdminTable from "./ui/AdminTable";
+import AdminBadge from "./ui/AdminBadge";
+import AdminEmptyState from "./ui/AdminEmptyState";
+import AdminPagination from "./ui/AdminPagination";
+import AdminButton from "./ui/AdminButton";
+import AdminSelect from "./ui/AdminSelect";
+import { AdminSearchInput, AdminToolbar } from "./ui/AdminToolbar";
+import { usePagination } from "./ui/usePagination";
+
+/**
+ * UsersSection — user directory for /admin-dashboard/users.
+ *
+ * Data + refresh come in through props (unchanged): `data` is the array
+ * returned by `/api/admin/users`, `onRefresh` re-runs the parent fetch.
+ * Filtering, sorting and CSV export behave exactly as before; the only
+ * functional addition is the shared AdminPagination footer (client-side
+ * slicing via usePagination, ready to move to server-side params later
+ * without touching the UI).
+ */
+const DEFAULT_PAGE_SIZE = 10;
 
 const formatDate = (value) => {
   if (!value) return "N/A";
@@ -15,13 +45,7 @@ const formatDate = (value) => {
 };
 
 const toSearchText = (user) =>
-  [
-    user?.fullName,
-    user?.username,
-    user?.email,
-    user?.phone,
-    user?.panNumber,
-  ]
+  [user?.fullName, user?.username, user?.email, user?.phone, user?.panNumber]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -59,6 +83,18 @@ export default function UsersSection({ data = [], onRefresh }) {
     return filtered;
   }, [data, searchTerm, sortBy]);
 
+  const {
+    page,
+    pageSize,
+    totalItems,
+    totalPages,
+    pagedItems,
+    setPage,
+    setPageSize,
+  } = usePagination(filteredAndSortedUsers, DEFAULT_PAGE_SIZE, {
+    resetKey: `${searchTerm}|${sortBy}`,
+  });
+
   const exportUsersCsv = () => {
     const headers = [
       "Name",
@@ -88,7 +124,7 @@ export default function UsersSection({ data = [], onRefresh }) {
       .map((row) =>
         row
           .map((cell) => `"${String(cell || "").replace(/"/g, '""')}"`)
-          .join(",")
+          .join(","),
       )
       .join("\n");
 
@@ -101,240 +137,192 @@ export default function UsersSection({ data = [], onRefresh }) {
     URL.revokeObjectURL(url);
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSortBy("joined");
+  };
+
+  const columns = [
+    {
+      key: "user",
+      header: "User",
+      render: (u) => {
+        const displayName = u?.fullName || u?.username || "Unnamed user";
+        return (
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500">
+              <UserRound className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-neutral-900">
+                {displayName}
+              </p>
+              <span className="inline-flex rounded-md bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-600">
+                @{u?.username || String(u?._id || "").slice(-6)}
+              </span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "contact",
+      header: "Contact",
+      render: (u) => (
+        <div className="space-y-1">
+          <p className="flex items-center gap-1.5 text-sm text-neutral-600">
+            <Mail className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <span className="truncate">{u?.email || "N/A"}</span>
+          </p>
+          <p className="flex items-center gap-1.5 text-sm text-neutral-600">
+            <Phone className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            {u?.phone || "N/A"}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "dob",
+      header: "Date of birth",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">{u?.dob || "N/A"}</span>
+      ),
+    },
+    {
+      key: "pan",
+      header: "PAN",
+      render: (u) => (
+        <div>
+          <p className="flex items-center gap-1.5 text-sm font-medium uppercase tracking-wider text-neutral-700">
+            <IdCard className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <span className="truncate">{u?.panNumber || "Not provided"}</span>
+          </p>
+          <AdminBadge
+            tone={u?.panVerified ? "success" : "pending"}
+            className="mt-1"
+          >
+            {u?.panVerified ? "Verified" : "Pending"}
+          </AdminBadge>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (u) =>
+        u?.emailVerified ? (
+          <AdminBadge tone="success" dot>
+            <CircleCheck className="h-3 w-3" aria-hidden="true" />
+            Verified
+          </AdminBadge>
+        ) : (
+          <AdminBadge tone="pending">Pending</AdminBadge>
+        ),
+    },
+    {
+      key: "joined",
+      header: "Joined",
+      render: (u) => (
+        <span className="flex items-center gap-1.5 text-sm text-neutral-600">
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+          {formatDate(u?.createdAt)}
+        </span>
+      ),
+    },
+  ];
+  // No rows at all — the section shell still wraps one clean empty state.
   if (!data || data.length === 0) {
     return (
-      <div className="border rounded-lg p-8 text-center text-neutral-500 bg-white">
-        <p className="text-lg">No users found</p>
-      </div>
+      <AdminSection bodyClassName="p-4 sm:p-5">
+        <AdminEmptyState
+          title="No users found"
+          description="There are no user accounts yet."
+          icon={Users}
+          actionLabel={onRefresh ? "Refresh" : undefined}
+          onAction={onRefresh}
+        />
+      </AdminSection>
     );
   }
 
+  /** Shared section card: header → toolbar → table → shared pagination. */
   return (
-    <div className="space-y-3">
-      <div className="sticky top-2 z-20 md:static rounded-2xl border border-neutral-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/85 p-3 shadow-[0_6px_24px_rgba(15,23,42,0.06)]">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
-          <div className="lg:col-span-2 relative">
-            <Search className="w-4 h-4 text-black/45 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, email, username, mobile, or PAN..."
-              className="w-full rounded-lg border border-neutral-200 px-9 py-2 text-sm text-black/80 placeholder:text-black/45 focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-neutral-400"
-            />
+    <AdminSection
+      toolbar={
+        <AdminToolbar
+          actions={
+            <>
+              <span className="text-sm text-neutral-500">
+                Total:{" "}
+                <span className="font-semibold text-neutral-900">
+                  {totalItems}
+                </span>
+              </span>
+              <AdminButton
+                variant="primary"
+                size="sm"
+                onClick={exportUsersCsv}
+                disabled={filteredAndSortedUsers.length === 0}
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Export CSV
+              </AdminButton>
+            </>
+          }
+        >
+          <AdminSearchInput
+            id="admin-users-search"
+            label="Search users"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm("")}
+            placeholder="Name, email, phone, PAN…"
+            className="sm:w-72"
+          />
+          <div className="w-full sm:w-52">
+            <label
+              htmlFor="admin-users-sort"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-neutral-500"
+            >
+              Sort by
+            </label>
+            <AdminSelect
+              id="admin-users-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="joined">Newest first</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
+            </AdminSelect>
           </div>
-          <button
-            type="button"
-            onClick={() => (onRefresh ? onRefresh() : window.location.reload())}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-500 px-3 py-2 text-white text-sm font-semibold hover:bg-emerald-600 transition"
-          >
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </button>
-          <button
-            type="button"
-            onClick={exportUsersCsv}
-            className="inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 font-semibold hover:bg-emerald-100 transition"
-          >
-            <Download className="w-4 h-4" /> Export
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-black/65 text-sm font-medium mr-1">Sort:</span>
-          <button
-            type="button"
-            onClick={() => setSortBy("joined")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "joined"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Joined
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy("name")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "name"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Name
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy("email")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "email"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Email
-          </button>
-          <span className="ml-auto text-sm text-black/70 font-medium px-3 py-1.5 rounded-lg bg-neutral-100 border border-neutral-200">
-            Total: <span className="font-bold text-black">{filteredAndSortedUsers.length}</span>
-          </span>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
-        <div className="md:hidden p-4 space-y-4 bg-neutral-50/70">
-          {filteredAndSortedUsers.map((u) => {
-            const displayName = u?.fullName || u?.username || "Unknown User";
-            const displayUsername = u?.username ? `@${u.username}` : "@na";
-
-            return (
-              <div key={u._id} className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-neutral-100 text-black/80 flex items-center justify-center shrink-0">
-                      <UserRound className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-black/90 truncate">{displayName}</p>
-                      <p className="text-black/55 text-sm truncate">{displayUsername}</p>
-                    </div>
-                  </div>
-                  {u?.emailVerified ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 text-xs font-semibold">
-                      <CircleCheck className="w-3.5 h-3.5" /> Verified
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-amber-700 text-xs font-semibold">
-                      <CircleCheck className="w-3.5 h-3.5" /> Pending
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-2 text-sm text-black/75">
-                  <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-black/45" /> {u?.email || "N/A"}</p>
-                  <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-black/45" /> {u?.phone || "N/A"}</p>
-                  <p className="flex items-center gap-2 uppercase tracking-wide"><IdCard className="w-4 h-4 text-black/45" /> {u?.panNumber || "Not Provided"}</p>
-                  <p className="flex items-center gap-2 text-black/60"><Calendar className="w-4 h-4 text-black/45" /> {formatDate(u?.createdAt)}</p>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <span className="inline-flex rounded-md bg-neutral-100 border border-neutral-200 px-2 py-1 text-xs font-semibold text-black/75">
-                    ID: {String(u?._id || "").slice(-6)}
-                  </span>
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                      u?.panVerified
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {u?.panVerified ? "PAN Verified" : "PAN Pending"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-275 text-sm">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-black font-semibold text-xs uppercase tracking-wide">User Info</th>
-                <th className="text-left px-4 py-3 text-black font-semibold text-xs uppercase tracking-wide">Contact</th>
-                <th className="text-left px-4 py-3 text-black font-semibold text-xs uppercase tracking-wide">DOB</th>
-                <th className="text-left px-4 py-3 text-black font-semibold text-xs uppercase tracking-wide">PAN Card</th>
-                <th className="text-left px-4 py-3 text-black font-semibold text-xs uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 text-black font-semibold text-xs uppercase tracking-wide">Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAndSortedUsers.map((u) => {
-                const displayName = u?.fullName || u?.username || "Unknown User";
-                const displayUsername = u?.username ? `@${u.username}` : "@na";
-
-                return (
-                  <tr
-                    key={u._id}
-                    className="border-b border-neutral-100 hover:bg-neutral-50/70 transition"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-neutral-100 text-black/80 flex items-center justify-center shrink-0">
-                          <UserRound className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-black/90 text-base truncate">{displayName}</p>
-                          <span className="inline-flex mt-1 rounded-md bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-xs font-medium text-black/65">
-                            ID: {String(u?._id || "").slice(-6)}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="space-y-1">
-                        <p className="flex items-center gap-2 text-black/75 text-sm">
-                          <Mail className="w-3.5 h-3.5 text-black/45 shrink-0" />
-                          <span className="truncate">{u?.email || "N/A"}</span>
-                        </p>
-                        <p className="flex items-center gap-2 text-black/75 text-sm">
-                          <Phone className="w-3.5 h-3.5 text-black/45 shrink-0" />
-                          {u?.phone || "N/A"}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <p className="text-black/75 text-sm">
-                        {u?.dob || "N/A"}
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <p className="flex items-center gap-2 font-medium text-black/75 text-sm uppercase tracking-wider">
-                        <IdCard className="w-3.5 h-3.5 text-black/45 shrink-0" />
-                        <span className="truncate">{u?.panNumber || "Not Provided"}</span>
-                      </p>
-                      <p className="mt-1">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            u?.panVerified
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          {u?.panVerified ? "Verified" : "Pending"}
-                        </span>
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      {u?.emailVerified ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-sm text-emerald-700 font-medium">
-                          <CircleCheck className="w-3.5 h-3.5" />
-                          Verified
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-sm text-amber-700 font-medium">
-                          <CircleCheck className="w-3.5 h-3.5" />
-                          Pending
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <p className="inline-flex items-center gap-1.5 text-black/60 text-sm">
-                        <Calendar className="w-3.5 h-3.5 text-black/45 shrink-0" />
-                        {formatDate(u?.createdAt)}
-                      </p>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+        </AdminToolbar>
+      }
+      footer={
+        totalItems > 0 ? (
+          <AdminPagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemLabel={totalItems === 1 ? "user" : "users"}
+          />
+        ) : null
+      }
+    >
+      {totalItems === 0 ? (
+        <AdminEmptyState
+          title="No users found"
+          description="There are no users matching the current filters."
+          actionLabel="Clear filters"
+          onAction={clearFilters}
+          icon={Users}
+        />
+      ) : (
+        <AdminTable columns={columns} rows={pagedItems} minWidth={880} />
+      )}
+    </AdminSection>
   );
 }

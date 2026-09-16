@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import AdminPagination from "@/app/components/admin/ui/AdminPagination";
 
 const formatDateTime = (value) => {
   if (!value) return "N/A";
@@ -761,32 +762,20 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
         )}
       </div>
 
-      {/* Pagination */}
-      {messages.length > 0 && (
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-slate-600">
-            Page {pagination.page} of {pagination.totalPages} | Total:{" "}
-            {pagination.total}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-              disabled={!pagination.hasPrevPage || loading}
-              className="px-3 py-1.5 rounded border border-slate-200 text-sm disabled:opacity-50 hover:bg-slate-50"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((prev) => prev + 1)}
-              disabled={!pagination.hasNextPage || loading}
-              className="px-3 py-1.5 rounded border border-slate-200 text-sm disabled:opacity-50 hover:bg-slate-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+      {/* Pagination — the shared admin control. This endpoint is already
+          server-side paginated (`?page=&limit=`), so the values the API
+          returned are passed straight through. */}
+      {(pagination.total || 0) > 0 && (
+        <AdminPagination
+          page={pagination.page || page}
+          totalPages={pagination.totalPages || 1}
+          totalItems={pagination.total || 0}
+          pageSize={pagination.limit || 10}
+          onPageChange={setPage}
+          disabled={loading}
+          itemLabel="messages"
+          emptyMessage="No messages to display on this page."
+        />
       )}
     </div>
   );

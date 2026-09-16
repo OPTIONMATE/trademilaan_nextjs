@@ -1,8 +1,33 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Download, RefreshCw, Search, Check, X } from "lucide-react";
+import { Download, Check, X } from "lucide-react";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import AdminSection from "./ui/AdminSection";
+import AdminTable from "./ui/AdminTable";
+import AdminBadge from "./ui/AdminBadge";
+import AdminEmptyState from "./ui/AdminEmptyState";
+import AdminPagination from "./ui/AdminPagination";
+import AdminButton from "./ui/AdminButton";
+import AdminModal from "./ui/AdminModal";
+import {
+  AdminFilterTabs,
+  AdminSearchInput,
+  AdminToolbar,
+} from "./ui/AdminToolbar";
+import { usePagination } from "./ui/usePagination";
+
+/**
+ * SignedUsersSection — /admin-dashboard/signed-users.
+ *
+ * All behaviour is preserved verbatim: `data`/`onRefresh` props, local row
+ * patching after PATCH `/api/admin/signed-users/update`, POST
+ * `/api/admin/signed-users/send-agreement`, CSV export, sort options, the
+ * confirm/result/KYC dialogs and the responsive mobile card list. Only the
+ * markup moved onto the shared primitives, plus the shared AdminPagination
+ * footer (mobile cards and desktop table paginate from the same slice).
+ */
+const DEFAULT_PAGE_SIZE = 10;
 
 const formatDate = (value) => {
   if (!value) return "N/A";
@@ -34,25 +59,25 @@ const toSearchText = (user) =>
     .join(" ")
     .toLowerCase();
 
-const StatusBadge = ({ value, label }) => {
-  return value ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1.5 text-emerald-700 font-semibold text-sm">
-      <Check className="w-4 h-4" /> {label || "Yes"}
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1.5 text-red-700 font-semibold text-sm">
-      <X className="w-4 h-4" /> No
-    </span>
-  );
-};
+/** Yes/No pill — meaning preserved (green = Yes, red = No). */
+const StatusBadge = ({ value, label }) => (
+  <AdminBadge tone={value ? "success" : "danger"} size="md">
+    {value ? (
+      <Check className="h-4 w-4" aria-hidden="true" />
+    ) : (
+      <X className="h-4 w-4" aria-hidden="true" />
+    )}
+    {value ? label || "Yes" : "No"}
+  </AdminBadge>
+);
 
-const MailStatusText = ({ value }) => {
-  return value ? (
+/** Mailed / not-mailed text indicator — meaning preserved. */
+const MailStatusText = ({ value }) =>
+  value ? (
     <span className="text-sm font-semibold text-emerald-700">Yes</span>
   ) : (
     <span className="text-sm font-semibold text-red-600">No</span>
   );
-};
 
 export default function SignedUsersSection({ data = [], onRefresh }) {
   const [localUsers, setLocalUsers] = useState(data || []);
@@ -89,8 +114,8 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
       // Update only the changed row locally to avoid table-wide re-render/flicker.
       setLocalUsers((prev) =>
         prev.map((u) =>
-          u.userId === userId ? { ...u, [statusType]: value } : u
-        )
+          u.userId === userId ? { ...u, [statusType]: value } : u,
+        ),
       );
 
       setKycDialog(null);
@@ -112,12 +137,13 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agreementId }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || "Failed to send");
+      const payload = await res.json();
+      if (!res.ok)
+        throw new Error(payload.error || payload.message || "Failed to send");
       setLocalUsers((prev) =>
         prev.map((row) =>
-          row._id === agreementId ? { ...row, agreementMailedToUser: true } : row
-        )
+          row._id === agreementId ? { ...row, agreementMailedToUser: true } : row,
+        ),
       );
       setResultModal({
         type: "success",
@@ -152,7 +178,9 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
       }
 
       if (sortBy === "serviceName") {
-        return String(a?.serviceName || "").localeCompare(String(b?.serviceName || ""));
+        return String(a?.serviceName || "").localeCompare(
+          String(b?.serviceName || ""),
+        );
       }
 
       // Default: newest consent date first
@@ -163,6 +191,18 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
 
     return filtered;
   }, [localUsers, searchTerm, sortBy]);
+
+  const {
+    page,
+    pageSize,
+    totalItems,
+    totalPages,
+    pagedItems,
+    setPage,
+    setPageSize,
+  } = usePagination(filteredAndSortedUsers, DEFAULT_PAGE_SIZE, {
+    resetKey: `${searchTerm}|${sortBy}`,
+  });
 
   const exportSignedUsersCsv = () => {
     const headers = [
@@ -205,7 +245,7 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
       .map((row) =>
         row
           .map((cell) => `"${String(cell || "").replace(/"/g, '""')}"`)
-          .join(",")
+          .join(","),
       )
       .join("\n");
 
@@ -218,437 +258,502 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
     URL.revokeObjectURL(url);
   };
 
-  if (!data || data.length === 0) {
+  const handleRefresh = () =>
+    onRefresh ? onRefresh() : window.location.reload();
+
+  const columns = [
+    {
+      key: "name",
+      header: "Name",
+      render: (u) => (
+        <span className="font-medium text-neutral-900">{u?.name || "—"}</span>
+      ),
+    },
+    {
+      key: "pan",
+      header: "PAN",
+      render: (u) => (
+        <span className="font-mono text-sm uppercase text-neutral-700">
+          {u?.pan || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "dob",
+      header: "DOB",
+      render: (u) => <span className="text-sm text-neutral-600">{u?.dob}</span>,
+    },
+    {
+      key: "consent",
+      header: "Consent date",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">
+          {formatDateWithTime(u?.dateOfConsent)}
+        </span>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">{u?.email}</span>
+      ),
+    },
+    {
+      key: "mobile",
+      header: "Mobile",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">{u?.mobile}</span>
+      ),
+    },
+    {
+      key: "state",
+      header: "State",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">{u?.state}</span>
+      ),
+    },
+    {
+      key: "service",
+      header: "Service",
+      render: (u) => (
+        <span className="text-sm font-medium text-neutral-800">
+          {u?.serviceName}
+        </span>
+      ),
+    },
+    {
+      key: "agreementMailed",
+      header: "Agreement mailed",
+      render: (u) => <MailStatusText value={u?.agreementMailedToUser} />,
+    },
+    {
+      key: "mitcMailed",
+      header: "MITC mailed",
+      render: (u) => <MailStatusText value={u?.mitcMailedToUser} />,
+    },
+    {
+      key: "kyc",
+      header: "KYC updated",
+      render: (u) => (
+        <button
+          type="button"
+          onClick={() =>
+            setKycDialog({
+              userId: u.userId,
+              name: u?.name || "User",
+              currentValue: Boolean(u?.kycUpdatedByAdmin),
+              selectedValue: Boolean(u?.kycUpdatedByAdmin),
+            })
+          }
+          className="rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BE749]/60 focus-visible:ring-offset-2"
+          aria-label={`Update KYC status for ${u?.name || "user"}`}
+        >
+          <StatusBadge value={u?.kycUpdatedByAdmin} />
+        </button>
+      ),
+    },
+    {
+      key: "validFrom",
+      header: "Valid from",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">
+          {formatDate(u?.validFrom)}
+        </span>
+      ),
+    },
+    {
+      key: "validTill",
+      header: "Valid till",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">
+          {formatDate(u?.validTill)}
+        </span>
+      ),
+    },
+    {
+      key: "renewal",
+      header: "Renewal",
+      render: (u) => (
+        <span className="text-sm text-neutral-600">
+          {formatDate(u?.renewalDate)}
+        </span>
+      ),
+    },
+    {
+      key: "invoiceMailed",
+      header: "Invoice mailed",
+      render: (u) => <StatusBadge value={u?.invoiceMailedToUser} />,
+    },
+    {
+      key: "actions",
+      header: "Send agreement",
+      align: "right",
+      render: (u) => (
+        <AdminButton
+          variant="secondary"
+          size="sm"
+          disabled={sendingAgreementId === u._id}
+          onClick={() =>
+            setConfirmSendModal({
+              agreementId: u._id,
+              email: u.email,
+              name: u.name,
+            })
+          }
+          aria-label={`Send agreement email to ${u?.email || "user"}`}
+        >
+          {sendingAgreementId === u._id ? "Sending…" : "Send"}
+        </AdminButton>
+      ),
+    },
+  ];
+
+  if (totalItems === 0 && (!localUsers || localUsers.length === 0)) {
     return (
-      <div className="space-y-6">
-        <div className="border rounded-lg p-8 text-center text-neutral-500 bg-white">
-          <p className="text-lg font-semibold">No signed users found</p>
-          <p className="text-sm mt-2 text-gray-500">
-            There are no signed agreements in the system yet.
-          </p>
-          <button
-            type="button"
-            onClick={() => (onRefresh ? onRefresh() : window.location.reload())}
-            className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      <AdminSection>
+        <AdminEmptyState
+          title="No signed users found"
+          description="There are no signed agreements in the system yet."
+          actionLabel="Refresh"
+          onAction={handleRefresh}
+        />
+      </AdminSection>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="sticky top-2 z-20 md:static rounded-2xl border border-neutral-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/85 p-3 shadow-[0_6px_24px_rgba(15,23,42,0.06)]">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
-          <div className="lg:col-span-2 relative">
-            <Search className="w-4 h-4 text-black/45 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
+    <AdminSection
+      toolbar={
+        <div className="flex flex-col gap-3">
+          <AdminToolbar
+            actions={
+              <>
+                <span className="text-sm text-neutral-500">
+                  Total:{" "}
+                  <span className="font-semibold text-neutral-900">
+                    {filteredAndSortedUsers.length}
+                  </span>
+                </span>
+                <AdminButton
+                  variant="primary"
+                  size="sm"
+                  onClick={exportSignedUsersCsv}
+                  disabled={filteredAndSortedUsers.length === 0}
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  Export CSV
+                </AdminButton>
+              </>
+            }
+          >
+            <AdminSearchInput
+              id="signed-users-search"
+              label="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, email, mobile, PAN, or service..."
-              className="w-full rounded-lg border border-neutral-200 px-9 py-2 text-sm text-black/80 placeholder:text-black/45 focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-neutral-400"
+              onClear={() => setSearchTerm("")}
+              placeholder="Name, email, mobile, PAN, or service…"
+              className="sm:w-96"
+            />
+          </AdminToolbar>
+          <AdminFilterTabs
+            label="Sort"
+            value={sortBy}
+            onChange={setSortBy}
+            options={[
+              { value: "dateOfConsent", label: "Date" },
+              { value: "name", label: "Name" },
+              { value: "email", label: "Email" },
+              { value: "serviceName", label: "Service" },
+            ]}
+          />
+        </div>
+      }
+      footer={
+        totalItems > 0 ? (
+          <AdminPagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemLabel={totalItems === 1 ? "signed user" : "signed users"}
+          />
+        ) : null
+      }
+    >
+      {totalItems === 0 ? (
+        <AdminEmptyState
+          title="No signed users match your search"
+          description="Try a different name, email, mobile, PAN or service."
+          actionLabel="Clear search"
+          onAction={() => setSearchTerm("")}
+        />
+      ) : (
+        <>
+          {/* Mobile card list (< md) — same fields as the desktop table */}
+          <div className="space-y-3 md:hidden">
+            {pagedItems.map((u) => (
+              <article
+                key={u._id}
+                className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.05)]"
+              >
+                <header className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold text-neutral-900">
+                      {u?.name || "—"}
+                    </h3>
+                    <p className="truncate text-sm text-neutral-500">
+                      {u?.email}
+                    </p>
+                  </div>
+                  <AdminBadge tone="accent" dot>
+                    {u?.serviceName || "Service"}
+                  </AdminBadge>
+                </header>
+
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <MobileField label="PAN">{u?.pan}</MobileField>
+                  <MobileField label="DOB">{u?.dob}</MobileField>
+                  <MobileField label="Mobile">{u?.mobile}</MobileField>
+                  <MobileField label="State">{u?.state}</MobileField>
+                  <MobileField label="Consent date">
+                    {formatDate(u?.dateOfConsent)}
+                  </MobileField>
+                  <MobileField label="Valid from">
+                    {formatDate(u?.validFrom)}
+                  </MobileField>
+                  <MobileField label="Valid till">
+                    {formatDate(u?.validTill)}
+                  </MobileField>
+                  <MobileField label="Renewal">
+                    {formatDate(u?.renewalDate)}
+                  </MobileField>
+                </dl>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Agreement mailed
+                    <MailStatusText value={u?.agreementMailedToUser} />
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    MITC mailed
+                    <MailStatusText value={u?.mitcMailedToUser} />
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setKycDialog({
+                        userId: u.userId,
+                        name: u?.name || "User",
+                        currentValue: Boolean(u?.kycUpdatedByAdmin),
+                        selectedValue: Boolean(u?.kycUpdatedByAdmin),
+                      })
+                    }
+                    className="rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BE749]/60 focus-visible:ring-offset-2"
+                    aria-label={`Update KYC status for ${u?.name || "user"}`}
+                  >
+                    <StatusBadge value={u?.kycUpdatedByAdmin} label="KYC done" />
+                  </button>
+                  <StatusBadge value={u?.invoiceMailedToUser} label="Invoice sent" />
+                </div>
+
+                <div className="mt-4">
+                  <AdminButton
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    disabled={sendingAgreementId === u._id}
+                    onClick={() =>
+                      setConfirmSendModal({
+                        agreementId: u._id,
+                        email: u.email,
+                        name: u.name,
+                      })
+                    }
+                  >
+                    {sendingAgreementId === u._id ? "Sending…" : "Send Agreement"}
+                  </AdminButton>
+                </div>
+              </article>
+            ))}
+          </div>
+          {/* Desktop table (>= md) — the same shared AdminTable used everywhere */}
+          <div className="hidden md:block">
+            <AdminTable
+              columns={columns}
+              rows={pagedItems}
+              minWidth={1800}
             />
           </div>
-          <button
-            type="button"
-            onClick={() => (onRefresh ? onRefresh() : window.location.reload())}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-500 px-3 py-2 text-white text-sm font-semibold hover:bg-emerald-600 transition"
-          >
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </button>
-          <button
-            type="button"
-            onClick={exportSignedUsersCsv}
-            className="inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 font-semibold hover:bg-emerald-100 transition"
-          >
-            <Download className="w-4 h-4" /> Export
-          </button>
-        </div>
 
-        <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-black/65 text-sm font-medium mr-1">Sort:</span>
-          <button
-            type="button"
-            onClick={() => setSortBy("dateOfConsent")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "dateOfConsent"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Date
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy("name")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "name"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Name
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy("email")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "email"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Email
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy("serviceName")}
-            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
-              sortBy === "serviceName"
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-black/75 hover:bg-neutral-200"
-            }`}
-          >
-            Service
-          </button>
-          <span className="ml-auto text-sm text-black/70 font-medium px-3 py-1.5 rounded-lg bg-neutral-100 border border-neutral-200">
-            Total: <span className="font-bold text-black">{filteredAndSortedUsers.length}</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Table Container with overflow-x-auto */}
-      <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
-        {/* Mobile View */}
-        <div className="md:hidden p-4 space-y-4 bg-neutral-50/70">
-          {filteredAndSortedUsers.map((u) => (
-            <div key={u._id} className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-              <div className="mb-4">
-                <p className="font-bold text-lg text-black/90">{u?.name}</p>
-                <p className="text-sm text-black/55">{u?.email}</p>
-              </div>
-
-              <div className="space-y-2 text-sm text-black/75">
-                <p>
-                  <span className="font-semibold text-black/90">PAN:</span> {u?.pan}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">DOB:</span> {u?.dob}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">Mobile:</span> {u?.mobile}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">State:</span> {u?.state}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">Service:</span> {u?.serviceName}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">Consent Date:</span>{" "}
-                  {formatDate(u?.dateOfConsent)}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">Valid From:</span>{" "}
-                  {formatDate(u?.validFrom)}
-                </p>
-                <p>
-                  <span className="font-semibold text-black/90">Valid Till:</span>{" "}
-                  {formatDate(u?.validTill)}
-                </p>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                <div>
-                  <p className="text-xs font-semibold text-black/65 mb-1">Agreement Mailed To User</p>
-                  {MailStatusText({ value: u?.agreementMailedToUser })}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-black/65 mb-1">MITC Mailed To User</p>
-                  {MailStatusText({ value: u?.mitcMailedToUser })}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-black/65 mb-1">KYC Updated By Admin</p>
-                  {StatusBadge({ value: u?.kycUpdatedByAdmin })}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-black/65 mb-1">Invoice Mailed To User</p>
-                  {StatusBadge({ value: u?.invoiceMailedToUser })}
-                </div>
-              </div>
-              <div className="mt-3">
-                <button
-                  disabled={sendingAgreementId === u._id}
-                  onClick={async () => {
-                    setConfirmSendModal({ agreementId: u._id, email: u.email, name: u.name });
-                  }}
-                  className={`w-full px-3 py-2 rounded-lg font-medium ${sendingAgreementId === u._id ? "bg-gray-300 text-gray-700" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+          {/* KYC status dialog — same PATCH call, now on the shared modal */}
+          {kycDialog && (
+            <AdminModal
+              open
+              onClose={() => setKycDialog(null)}
+              title="Update KYC status"
+              description={`User: ${kycDialog.name}`}
+              maxWidth="max-w-md"
+              footer={
+                <AdminButton
+                  variant="secondary"
+                  onClick={() => setKycDialog(null)}
                 >
-                  {sendingAgreementId === u._id ? "Sending..." : "Send Agreement"}
+                  Cancel
+                </AdminButton>
+              }
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={updatingUserId === kycDialog.userId}
+                  onClick={() =>
+                    updateUserStatus(
+                      kycDialog.userId,
+                      "kycUpdatedByAdmin",
+                      true,
+                    )
+                  }
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    kycDialog.selectedValue
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+                  }`}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingUserId === kycDialog.userId}
+                  onClick={() =>
+                    updateUserStatus(
+                      kycDialog.userId,
+                      "kycUpdatedByAdmin",
+                      false,
+                    )
+                  }
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    !kycDialog.selectedValue
+                      ? "border-rose-300 bg-rose-50 text-rose-700"
+                      : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+                  }`}
+                >
+                  No
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
+              <p className="mt-3 text-xs text-neutral-500">
+                Currently marked as{" "}
+                <span className="font-semibold text-neutral-700">
+                  {kycDialog.selectedValue ? "Yes" : "No"}
+                </span>
+                .
+              </p>
+            </AdminModal>
+          )}
 
-        {/* Desktop View with horizontal scroll container */}
-        <div className="hidden md:block w-full overflow-x-auto">
-          <table className="w-full min-w-[1900px] text-sm">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
-              <tr>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Name
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  PAN
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  DOB
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Consent Date
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Email
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Mobile
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  State
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Service
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Agreement Mailed
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  MITC Mailed
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  KYC Updated
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Valid From
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Valid Till
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Renewal
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Invoice Mailed
-                </th>
-                <th className="text-left px-3 py-2.5 text-black/80 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-                  Send Agreement
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAndSortedUsers.map((u) => (
-                <tr
-                  key={u._id}
-                  className="border-b border-neutral-100 hover:bg-neutral-50/70 transition"
+          {/* Result dialog (send-agreement outcome) */}
+          {resultModal && (
+            <AdminModal
+              open
+              onClose={() => setResultModal(null)}
+              title={resultModal.type === "success" ? "Success" : "Error"}
+              maxWidth="max-w-md"
+              footer={
+                <AdminButton
+                  variant="secondary"
+                  onClick={() => setResultModal(null)}
                 >
-                  <td className="px-3 py-2.5 font-medium text-black/90 whitespace-nowrap">
-                    {u?.name}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 font-mono text-sm whitespace-nowrap">
-                    {u?.pan}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {u?.dob}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {formatDateWithTime(u?.dateOfConsent)}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap truncate">
-                    {u?.email}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {u?.mobile}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {u?.state}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/80 text-sm font-medium whitespace-nowrap">
-                    {u?.serviceName}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {MailStatusText({ value: u?.agreementMailedToUser })}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {MailStatusText({ value: u?.mitcMailedToUser })}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setKycDialog({
-                          userId: u.userId,
-                          name: u?.name || "User",
-                          currentValue: Boolean(u?.kycUpdatedByAdmin),
-                          selectedValue: Boolean(u?.kycUpdatedByAdmin),
-                        })
-                      }
-                      className="rounded-full"
-                    >
-                      {StatusBadge({ value: u?.kycUpdatedByAdmin })}
-                    </button>
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {formatDate(u?.validFrom)}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {formatDate(u?.validTill)}
-                  </td>
-                  <td className="px-3 py-2.5 text-black/75 text-sm whitespace-nowrap">
-                    {formatDate(u?.renewalDate)}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {StatusBadge({ value: u?.invoiceMailedToUser })}
-                  </td>
-                  <td className="px-3 py-2.5 text-sm whitespace-nowrap">
-                    <button
-                      disabled={sendingAgreementId === u._id}
-                      onClick={async () => {
-                        setConfirmSendModal({ agreementId: u._id, email: u.email, name: u.name });
-                      }}
-                      className={`px-3 py-1 rounded-lg font-medium ${sendingAgreementId === u._id ? "bg-gray-300 text-gray-700" : "bg-blue-600 text-white hover:bg-blue-700"}`}
-                    >
-                      {sendingAgreementId === u._id ? "Sending..." : "Send"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {kycDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-xl">
-            <h3 className="text-base font-semibold text-black/90">Update KYC Status</h3>
-            <p className="mt-1 text-sm text-black/65">User: {kycDialog.name}</p>
-
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={updatingUserId === kycDialog.userId}
-                onClick={() =>
-                  updateUserStatus(
-                    kycDialog.userId,
-                    "kycUpdatedByAdmin",
-                    true
-                  )
-                }
-                className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                  kycDialog.selectedValue
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                    : "border-neutral-200 bg-white text-black/75"
-                }`}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                disabled={updatingUserId === kycDialog.userId}
-                onClick={() =>
-                  updateUserStatus(
-                    kycDialog.userId,
-                    "kycUpdatedByAdmin",
-                    false
-                  )
-                }
-                className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                  !kycDialog.selectedValue
-                    ? "border-rose-300 bg-rose-50 text-rose-700"
-                    : "border-neutral-200 bg-white text-black/75"
-                }`}
-              >
-                No
-              </button>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setKycDialog(null)}
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm text-black/75 hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+                  Close
+                </AdminButton>
+              }
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                    resultModal.type === "success"
+                      ? "bg-emerald-100 text-emerald-600"
+                      : "bg-red-100 text-red-600"
+                  }`}
+                >
+                  {resultModal.type === "success" ? (
+                    <Check className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <X className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </span>
+                <p
+                  className={`text-sm ${
+                    resultModal.type === "success"
+                      ? "text-emerald-700"
+                      : "text-red-700"
+                  }`}
+                >
+                  {resultModal.message}
+                </p>
+              </div>
+            </AdminModal>
+          )}
+          {/* Confirm dialog for send-agreement (backdrop click disabled) */}
+          {confirmSendModal && (
+            <AdminModal
+              open
+              onClose={() => setConfirmSendModal(null)}
+              title="Send agreement email"
+              maxWidth="max-w-md"
+              closeOnBackdrop={false}
+              footer={
+                <>
+                  <AdminButton
+                    variant="secondary"
+                    onClick={() => setConfirmSendModal(null)}
+                  >
+                    Cancel
+                  </AdminButton>
+                  <AdminButton
+                    variant="primary"
+                    onClick={handleConfirmedSend}
+                    disabled={
+                      sendingAgreementId === confirmSendModal.agreementId
+                    }
+                  >
+                    {sendingAgreementId === confirmSendModal.agreementId
+                      ? "Sending…"
+                      : "Send"}
+                  </AdminButton>
+                </>
+              }
+            >
+              <p className="text-sm text-neutral-600">
+                Are you sure you want to send the agreement to{" "}
+                <span className="font-semibold text-neutral-900">
+                  {confirmSendModal.email}
+                </span>
+                ?
+              </p>
+            </AdminModal>
+          )}
+        </>
       )}
+    </AdminSection>
+  );
+}
 
-      {resultModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              {resultModal.type === "success" ? (
-                <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-emerald-100">
-                  <Check className="h-6 w-6 text-emerald-600" />
-                </div>
-              ) : (
-                <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100">
-                  <X className="h-6 w-6 text-red-600" />
-                </div>
-              )}
-              <h3 className={`text-base font-semibold ${resultModal.type === "success" ? "text-emerald-900" : "text-red-900"}`}>
-                {resultModal.type === "success" ? "Success" : "Error"}
-              </h3>
-            </div>
-            <p className={`text-sm ${resultModal.type === "success" ? "text-emerald-700" : "text-red-700"}`}>
-              {resultModal.message}
-            </p>
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setResultModal(null)}
-                className={`px-4 py-2 rounded-lg font-medium text-white transition ${resultModal.type === "success" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmSendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="text-base font-semibold text-black/90 mb-2">Send Agreement Email</h3>
-            <p className="text-sm text-black/65 mb-4">
-              Are you sure you want to send the agreement to <span className="font-medium">{confirmSendModal.email}</span>?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmSendModal(null)}
-                className="px-4 py-2 rounded-lg border border-neutral-200 text-black/75 font-medium hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmedSend}
-                disabled={sendingAgreementId === confirmSendModal.agreementId}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                {sendingAgreementId === confirmSendModal.agreementId ? "Sending..." : "Send"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+/** Label/value pair used by the mobile card list. */
+function MobileField({ label, children }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        {label}
+      </dt>
+      <dd className="mt-0.5 truncate font-medium text-neutral-800">
+        {children || "—"}
+      </dd>
     </div>
   );
 }

@@ -14,6 +14,12 @@ import BuyFlowShell, {
   buySuccessClass,
 } from "./BuyFlowShell";
 
+// Download action uses the product's purple accent (registration/login links,
+// E-Sign tabs, agreement keyword highlight) so it reads as a primary action
+// next to the lime "Continue to payment" CTA.
+const buyDownloadButtonClass =
+  "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-purple-700 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+
 export default function AgreementModal({
   onClose,
   onSuccess,
@@ -392,7 +398,7 @@ export default function AgreementModal({
                       <a
                         href={`/api/agreement/download/${signedFileId}`}
                         download={`agreement-${signedFileId}.pdf`}
-                        className={buySecondaryButtonClass}
+                        className={buyDownloadButtonClass}
                       >
                         Download signed agreement (PDF)
                       </a>

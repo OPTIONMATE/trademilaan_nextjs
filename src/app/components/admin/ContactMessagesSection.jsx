@@ -63,6 +63,18 @@ const getPriorityColor = (priority) => {
   }
 };
 
+const SUBJECT_LABELS = {
+  general: "General Inquiry",
+  account: "Account Support",
+  billing: "Billing & Pricing",
+  feedback: "Feedback / Suggestions",
+  other: "Other",
+};
+
+const SUBJECT_VALUES = ["general", "account", "billing", "feedback", "other"];
+
+const formatSubject = (value) => SUBJECT_LABELS[value] || "—";
+
 export default function ContactMessagesSection({ onUnreadCountChange }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +85,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
   const [ticketStatus, setTicketStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [assignedTo, setAssignedTo] = useState("all");
+  const [subject, setSubject] = useState("all");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -97,7 +110,8 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
     nextReadStatus = readStatus,
     nextTicketStatus = ticketStatus,
     nextPriority = priority,
-    nextAssignedTo = assignedTo
+    nextAssignedTo = assignedTo,
+    nextSubject = subject
   ) => {
     try {
       setLoading(true);
@@ -111,6 +125,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
         ticketStatus: nextTicketStatus,
         priority: nextPriority,
         assignedTo: nextAssignedTo,
+        subject: nextSubject,
       });
 
       const response = await fetch(`/api/admin/contact-messages?${params.toString()}`, {
@@ -145,7 +160,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, readStatus, ticketStatus, priority, assignedTo]);
+  }, [debouncedSearch, readStatus, ticketStatus, priority, assignedTo, subject]);
 
   useEffect(() => {
     fetchMessages(
@@ -154,9 +169,10 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
       readStatus,
       ticketStatus,
       priority,
-      assignedTo
+      assignedTo,
+      subject
     );
-  }, [page, debouncedSearch, readStatus, ticketStatus, priority, assignedTo]);
+  }, [page, debouncedSearch, readStatus, ticketStatus, priority, assignedTo, subject]);
 
   const handleToggleRead = async (messageId, isRead) => {
     try {
@@ -180,7 +196,7 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
       setMessages((prev) =>
         prev.map((m) => (m._id === messageId ? { ...m, isRead: !isRead } : m))
       );
-      fetchMessages(page, debouncedSearch, readStatus, ticketStatus, priority, assignedTo);
+      fetchMessages(page, debouncedSearch, readStatus, ticketStatus, priority, assignedTo, subject);
       setSuccess("Updated successfully");
     } catch {
       setError("Failed to update");
@@ -392,7 +408,8 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
               readStatus,
               ticketStatus,
               priority,
-              assignedTo
+              assignedTo,
+              subject
             )
           }
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-white font-semibold hover:bg-emerald-600 transition"
@@ -469,6 +486,19 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
             placeholder="Filter by assignee..."
             className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
           />
+
+          <select
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          >
+            <option value="all">Subject: All</option>
+            {SUBJECT_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {SUBJECT_LABELS[value]}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -494,6 +524,9 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-800">
                     From
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-800">
+                    Subject
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-800">
                     Message
@@ -540,6 +573,13 @@ export default function ContactMessagesSection({ onUnreadCountChange }) {
                         <p className="font-semibold">{m.name}</p>
                         <p className="text-slate-500">{m.email}</p>
                       </div>
+                    </td>
+
+                    {/* Subject */}
+                    <td className="px-4 py-3 text-xs text-slate-700">
+                      <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-sky-100 text-sky-700">
+                        {formatSubject(m.subject)}
+                      </span>
                     </td>
 
                     {/* Message */}

@@ -40,6 +40,7 @@ export async function GET(req) {
     const ticketStatus = String(searchParams.get("ticketStatus") || "all").trim();
     const priority = String(searchParams.get("priority") || "all").trim();
     const assignedTo = String(searchParams.get("assignedTo") || "all").trim();
+    const subject = String(searchParams.get("subject") || "all").trim();
 
     const query = {};
 
@@ -66,6 +67,13 @@ export async function GET(req) {
 
     if (assignedTo !== "all" && assignedTo.length > 0) {
       query.assignedTo = assignedTo;
+    }
+
+    if (
+      subject !== "all" &&
+      ["general", "account", "billing", "feedback", "other"].includes(subject)
+    ) {
+      query.subject = subject;
     }
 
     const skip = (page - 1) * limit;

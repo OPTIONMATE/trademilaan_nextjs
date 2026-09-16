@@ -1,7 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import fs from "fs";
-import path from "path";
 import { computeFinalServiceDate } from "./planValidity";
+import { getRASignatureJpegBuffer } from "./raSignature";
 
 function formatSignedDateDisplay(input) {
   if (input === undefined || input === null || input === "") {
@@ -1286,16 +1285,16 @@ export async function generateCompleteAgreementPDF(agreementData) {
     let raSigW = colWidth - 2 * cellPaddingX;
     let raSigH = sigAreaHeight - 10;
     // --- RA signature (right) ---
-    // Static RA (Service Provider) signature asset. It lives in /public so the
-    // same file is served to the browser (RASignature.jsx) and read here at
-    // render time. RA_SIGNATURE_PATH can override it when deployed elsewhere.
-    const raSignaturePath =
-      process.env.RA_SIGNATURE_PATH ||
-      path.join(process.cwd(), "public", "ra-signature.jpeg");
-    let raSigBuffer = null;
+    // The RA (Service Provider) signature is a fixed company asset. Its bytes are
+    // bundled with the server code (see ./raSignature) instead of being read from
+    // public/ at render time, because public/ is a static-asset directory that a
+    // deployed server (serverless function / standalone build) does not
+    // necessarily have on its filesystem - that is why the RA signature used to
+    // be missing from production PDFs while still working locally.
+    // RA_SIGNATURE_PATH (optional) can still override it with a file path.
     let raImageDrawn = false;
     try {
-      raSigBuffer = fs.readFileSync(raSignaturePath);
+      const raSigBuffer = getRASignatureJpegBuffer();
       if (raSigBuffer && raSigBuffer.length > 0) {
         const raSigImage = await pdfDoc.embedJpg(raSigBuffer);
         // Maintain aspect ratio, max width 120, max height raSigH
@@ -1315,7 +1314,12 @@ export async function generateCompleteAgreementPDF(agreementData) {
         raImageDrawn = true;
       }
     } catch (err) {
-      // If image not found, fallback below
+      // Never fail the whole agreement, but never hide the failure either: log it
+      // so a missing RA signature is visible instead of silently disappearing.
+      console.error(
+        "[PDF] RA signature could not be embedded - agreement generated without it:",
+        err.message,
+      );
     }
     // Only draw line if image was not drawn
     if (!raImageDrawn) {

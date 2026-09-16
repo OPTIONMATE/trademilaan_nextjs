@@ -2,7 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // Strip console output from production builds, but keep console.error: a
+    // server-side failure such as a missing PDF signature asset must stay
+    // visible in the production logs instead of failing silently.
+    removeConsole:
+      process.env.NODE_ENV === "production" ? { exclude: ["error"] } : false,
   },
   images: {
     remotePatterns: [

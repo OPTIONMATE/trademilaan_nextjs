@@ -126,20 +126,20 @@ export default function ServiceAgreement({
   return (
     <div className="w-full bg-white min-h-screen">
       {/* COLLAPSIBLE TABLE OF CONTENTS BUTTON */}
-      <div className="w-full bg-linear-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 sticky top-0 z-50">
+      <div className="w-full border-b border-neutral-200 bg-neutral-50 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-8 py-3">
           <button
             onClick={() => setShowTOC(!showTOC)}
-            className="flex items-center gap-2 text-lg font-bold text-gray-900 hover:text-blue-600 transition"
+            className="flex items-center gap-2 text-sm font-bold text-neutral-900 transition hover:text-neutral-600"
           >
-            📋 {showTOC ? "Hide" : "Show"} Table of Contents
+            Table of Contents ({showTOC ? "Hide" : "Show"})
           </button>
         </div>
       </div>
 
       {/* TABLE OF CONTENTS - COLLAPSIBLE */}
       {showTOC && (
-        <div className="w-full bg-linear-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
+        <div className="w-full border-b border-neutral-200 bg-neutral-50">
           <div className="max-w-4xl mx-auto px-8 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {sections.map((section) => (
@@ -154,9 +154,9 @@ export default function ServiceAgreement({
                       });
                     }
                   }}
-                  className="text-left text-sm text-blue-600 hover:text-blue-800 hover:underline truncate"
+                  className="text-left text-sm font-medium text-neutral-700 hover:text-neutral-900 hover:underline truncate"
                 >
-                  → {section.title}
+                  {section.title}
                 </button>
               ))}
             </div>
@@ -175,117 +175,90 @@ export default function ServiceAgreement({
             SERVICE AGREEMENT
           </div>
 
-          {/* CLIENT / KYC — Buy Details; branded card layout */}
-          <div className="mb-8 relative overflow-hidden rounded-2xl border border-slate-200/90 bg-linear-to-br from-slate-50 via-white to-indigo-50/50 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_22px_44px_-16px_rgba(109,91,255,0.18)]">
-            <div
-              className="absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-[#9BE749] via-teal-400 to-[#6d5bff]"
-              aria-hidden
-            />
-            <div className="absolute -right-16 -top-20 h-40 w-40 rounded-full bg-[#9BE749]/15 blur-3xl pointer-events-none" />
-            <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-violet-400/10 blur-2xl pointer-events-none" />
-
-            <div className="relative px-5 py-6 sm:px-7 sm:py-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-5 border-b border-slate-200/80">
-                <div className="flex items-start gap-3">
-                  <span
-                    className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#9BE749] to-emerald-600 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-white"
-                    aria-hidden
-                  >
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                      />
-                    </svg>
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                      Subscriber &amp; KYC
-                    </p>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                      Your details on this agreement
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-600 max-w-xl">
-                      Pulled from the information you entered at checkout.
-                      Please verify before signing.
-                    </p>
-                  </div>
+          {/* CLIENT / KYC — Buy Details; neutral card matching the buying flow */}
+          <div className="mb-8 rounded-2xl border border-neutral-200 bg-neutral-50">
+            <div className="px-5 py-6 sm:px-7 sm:py-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-5 border-b border-neutral-200">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+                    Subscriber &amp; KYC
+                  </p>
+                  <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
+                    Your details on this agreement
+                  </h2>
+                  <p className="mt-1 text-xs text-neutral-600 max-w-xl">
+                    Pulled from the information you entered at checkout.
+                    Please verify before signing.
+                  </p>
                 </div>
-                <div className="sm:text-right rounded-xl bg-white/90 border border-emerald-200/60 px-4 py-3 shadow-sm">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800/80">
+                <div className="sm:text-right rounded-xl bg-white border border-neutral-200 px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                     Agreement date
                   </p>
-                  <p className="text-lg font-bold tabular-nums text-emerald-700">
+                  <p className="text-lg font-bold tabular-nums text-neutral-900">
                     {signedDate}
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800/80 mt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mt-2">
                     Plan Duration
                   </p>
-                  <p className="text-base font-bold tabular-nums text-emerald-700">
+                  <p className="text-base font-bold tabular-nums text-neutral-900">
                     {duration} days
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800/80 mt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mt-2">
                     Service Period
                   </p>
-                  <p className="text-base font-bold tabular-nums text-emerald-700">
+                  <p className="text-base font-bold tabular-nums text-neutral-900">
                     {formatDate(startDate)} to {formatDate(endDate)}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-100 bg-white/90 p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-emerald-200/70 hover:shadow-md">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
                     Client name
                   </p>
-                  <p className="text-[15px] font-bold text-slate-900 leading-snug">
+                  <p className="text-[15px] font-bold text-neutral-900 leading-snug">
                     {clientName}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-white/90 p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-violet-200/80 hover:shadow-md">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
                     Email
                   </p>
-                  <p className="text-[13px] font-semibold text-slate-800 break-all leading-snug">
+                  <p className="text-[13px] font-semibold text-neutral-800 break-all leading-snug">
                     {emailDisplay}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-white/90 p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-sky-200/80 hover:shadow-md">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
                     Date of birth
                   </p>
-                  <p className="text-[15px] font-bold text-slate-900 tabular-nums">
+                  <p className="text-[15px] font-bold text-neutral-900 tabular-nums">
                     {formatDobDisplay(clientDob)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-white/90 p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-amber-200/80 hover:shadow-md">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
                     Gender
                   </p>
-                  <p className="text-[15px] font-bold text-slate-900">
+                  <p className="text-[15px] font-bold text-neutral-900">
                     {genderDisplay}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-white/90 p-4 shadow-sm ring-1 ring-slate-900/5 sm:col-span-2 transition hover:border-indigo-200/80 hover:shadow-md">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:col-span-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
                     State
                   </p>
-                  <p className="text-[15px] font-bold text-slate-900">
+                  <p className="text-[15px] font-bold text-neutral-900">
                     {stateDisplay}
                   </p>
                 </div>
-                <div className="rounded-xl border border-dashed border-[#9BE749]/50 bg-linear-to-br from-emerald-50/90 to-teal-50/60 p-4 shadow-sm sm:col-span-2 ring-1 ring-[#9BE749]/25">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-900/70 mb-2">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:col-span-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-2">
                     PAN (client)
                   </p>
-                  <p className="font-mono text-lg font-bold tracking-[0.2em] text-slate-900">
+                  <p className="font-mono text-lg font-bold tracking-[0.2em] text-neutral-900">
                     {typeof panDisplay === "string"
                       ? panDisplay.toUpperCase()
                       : panDisplay}

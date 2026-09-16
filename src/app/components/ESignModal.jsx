@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import { buyInputClass, buyPrimaryButtonClass, buySecondaryButtonClass } from "./buy/BuyFlowShell";
 
 const SignaturePad = dynamic(() => import("react-signature-canvas"), {
   ssr: false,
@@ -77,31 +78,42 @@ export default function ESignModal({ onClose, onSaved, pdfUrl }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-        <div className="p-8 max-h-[82vh] overflow-y-auto">
-          <h2 className="text-2xl font-semibold text-center text-slate-900 mb-6">
-            E-Sign Agreement
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden">
+        <div className="p-6 sm:p-8 max-h-[82vh] overflow-y-auto">
+          <p className="text-xs font-bold uppercase tracking-wide text-neutral-500 text-center">
+            Step 6 of 5 · E-Sign
+          </p>
+          <h2 className="mt-1 text-xl font-bold text-center text-neutral-900 mb-2">
+            Insert your signature
           </h2>
-          <p className="text-center text-slate-700 mb-4">
-            Please enter your full name as it appears in your official
-            documents. This will be used as your digital signature on the
-            agreement.
+          <p className="text-center text-sm text-neutral-600 mb-6 max-w-xl mx-auto">
+            Type, draw or upload your signature exactly as it appears in your
+            official documents. Choosing “Insert signature” returns you to the
+            agreement preview so you can review before continuing.
           </p>
 
-          <div className="flex justify-center mb-6 border border-slate-200 rounded-lg overflow-hidden">
-            {["typed", "draw", "upload"].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-5 py-2 text-sm font-semibold uppercase tracking-wide transition ${
-                  tab === t
-                    ? "bg-purple-600 text-white"
-                    : "bg-white text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="flex justify-center mb-6">
+            <div
+              role="tablist"
+              aria-label="Signature method"
+              className="inline-flex rounded-xl border border-neutral-200 bg-neutral-50 p-1"
+            >
+              {["typed", "draw", "upload"].map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  onClick={() => setTab(t)}
+                  className={`rounded-lg px-5 py-2 text-sm font-semibold capitalize transition ${
+                    tab === t
+                      ? "bg-[#9BE749] text-black shadow-sm"
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                >
+                  {t === "typed" ? "Type" : t === "draw" ? "Draw" : "Upload"}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="max-w-xl mx-auto">

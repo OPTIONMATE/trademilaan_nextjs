@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import AdminPageHeader from "@/app/components/admin/ui/AdminPageHeader";
+import AdminButton from "@/app/components/admin/ui/AdminButton";
 import AdminErrorState from "@/app/components/admin/ui/AdminErrorState";
 import { AdminSkeletonTable } from "@/app/components/admin/ui/AdminSkeleton";
 import UsersSection from "@/app/components/admin/UsersSection";
@@ -44,6 +46,17 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         description="All registered user accounts on the platform."
+        actions={
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            onClick={load}
+            disabled={loading}
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Refresh
+          </AdminButton>
+        }
       />
 
       {loading && <AdminSkeletonTable rows={8} columns={6} />}

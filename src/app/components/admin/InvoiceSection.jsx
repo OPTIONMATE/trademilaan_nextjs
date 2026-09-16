@@ -179,11 +179,7 @@ export default function InvoiceSection({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <AdminSection
-        eyebrow="Billing"
-        title="Invoices"
-        description="Invoices generated for client purchases, with PDF download."
-      >
+      <AdminSection>
         <AdminEmptyState
           title="No invoices found"
           description="Invoices will appear here once a purchase completes."
@@ -196,9 +192,6 @@ export default function InvoiceSection({ data }) {
   return (
     <>
       <AdminSection
-        eyebrow="Billing"
-        title="Invoices"
-        description="Search by client name or amount, then open an invoice for details."
         toolbar={
           <AdminToolbar
             actions={

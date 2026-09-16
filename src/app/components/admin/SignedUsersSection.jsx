@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Download, RefreshCw, Check, X } from "lucide-react";
+import { Download, Check, X } from "lucide-react";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
 import AdminSection from "./ui/AdminSection";
 import AdminTable from "./ui/AdminTable";
@@ -411,11 +411,7 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
 
   if (totalItems === 0 && (!localUsers || localUsers.length === 0)) {
     return (
-      <AdminSection
-        eyebrow="KYC & e-sign"
-        title="Signed users"
-        description="Users who have signed agreements — KYC status, mailed documents and renewals."
-      >
+      <AdminSection>
         <AdminEmptyState
           title="No signed users found"
           description="There are no signed agreements in the system yet."
@@ -428,36 +424,27 @@ export default function SignedUsersSection({ data = [], onRefresh }) {
 
   return (
     <AdminSection
-      eyebrow="KYC & e-sign"
-      title="Signed users"
-      description="Search by name, email, mobile, PAN or service. Manage KYC status, mailed documents and renewals."
-      actions={
-        <>
-          <AdminButton variant="secondary" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Refresh
-          </AdminButton>
-          <AdminButton
-            variant="primary"
-            size="sm"
-            onClick={exportSignedUsersCsv}
-            disabled={filteredAndSortedUsers.length === 0}
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Export CSV
-          </AdminButton>
-        </>
-      }
       toolbar={
         <div className="flex flex-col gap-3">
           <AdminToolbar
             actions={
-              <span className="text-sm text-neutral-500">
-                Total:{" "}
-                <span className="font-semibold text-neutral-900">
-                  {filteredAndSortedUsers.length}
+              <>
+                <span className="text-sm text-neutral-500">
+                  Total:{" "}
+                  <span className="font-semibold text-neutral-900">
+                    {filteredAndSortedUsers.length}
+                  </span>
                 </span>
-              </span>
+                <AdminButton
+                  variant="primary"
+                  size="sm"
+                  onClick={exportSignedUsersCsv}
+                  disabled={filteredAndSortedUsers.length === 0}
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  Export CSV
+                </AdminButton>
+              </>
             }
           >
             <AdminSearchInput

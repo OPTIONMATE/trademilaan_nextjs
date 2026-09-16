@@ -165,11 +165,7 @@ export default function SignedAgreementsSection({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <AdminSection
-        eyebrow="Agreements"
-        title="Signed agreements"
-        description="Signed client agreements with downloadable PDF copies."
-      >
+      <AdminSection>
         <AdminEmptyState
           title="No signed agreements found"
           description="Signed agreements will appear here once clients complete the e-sign flow."
@@ -181,9 +177,6 @@ export default function SignedAgreementsSection({ data }) {
 
   return (
     <AdminSection
-      eyebrow="Agreements"
-      title="Signed agreements"
-      description="Search by client email and download the signed PDF copy."
       toolbar={
         <AdminToolbar
           actions={

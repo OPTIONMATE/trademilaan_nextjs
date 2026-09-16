@@ -47,11 +47,7 @@ export default function RiskProfilesSection({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <AdminSection
-        eyebrow="Risk assessment"
-        title="Risk profiles"
-        description="Client risk profiling questionnaires submitted across the platform."
-      >
+      <AdminSection>
         <AdminEmptyState
           title="No risk profiles found"
           description="Risk profiling questionnaires will appear here once clients submit them."
@@ -146,9 +142,6 @@ export default function RiskProfilesSection({ data }) {
   return (
     <>
       <AdminSection
-        eyebrow="Risk assessment"
-        title="Risk profiles"
-        description="Client risk profiling questionnaires submitted across the platform."
         footer={
           <AdminPagination
             page={page}

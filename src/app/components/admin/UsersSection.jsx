@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   Download,
-  RefreshCw,
   UserRound,
   Mail,
   Phone,
@@ -234,12 +233,7 @@ export default function UsersSection({ data = [], onRefresh }) {
   // No rows at all — the section shell still wraps one clean empty state.
   if (!data || data.length === 0) {
     return (
-      <AdminSection
-        eyebrow="User directory"
-        title="Registered users"
-        description="Every account created on the platform."
-        bodyClassName="p-4 sm:p-5"
-      >
+      <AdminSection bodyClassName="p-4 sm:p-5">
         <AdminEmptyState
           title="No users found"
           description="There are no user accounts yet."
@@ -254,40 +248,26 @@ export default function UsersSection({ data = [], onRefresh }) {
   /** Shared section card: header → toolbar → table → shared pagination. */
   return (
     <AdminSection
-      eyebrow="User directory"
-      title="Registered users"
-      description="Search, sort and export every registered account."
-      actions={
-        <>
-          <AdminButton
-            variant="secondary"
-            size="sm"
-            onClick={onRefresh}
-            disabled={!onRefresh}
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Refresh
-          </AdminButton>
-          <AdminButton
-            variant="primary"
-            size="sm"
-            onClick={exportUsersCsv}
-            disabled={filteredAndSortedUsers.length === 0}
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Export CSV
-          </AdminButton>
-        </>
-      }
       toolbar={
         <AdminToolbar
           actions={
-            <span className="text-sm text-neutral-500">
-              Total:{" "}
-              <span className="font-semibold text-neutral-900">
-                {totalItems}
+            <>
+              <span className="text-sm text-neutral-500">
+                Total:{" "}
+                <span className="font-semibold text-neutral-900">
+                  {totalItems}
+                </span>
               </span>
-            </span>
+              <AdminButton
+                variant="primary"
+                size="sm"
+                onClick={exportUsersCsv}
+                disabled={filteredAndSortedUsers.length === 0}
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Export CSV
+              </AdminButton>
+            </>
           }
         >
           <AdminSearchInput

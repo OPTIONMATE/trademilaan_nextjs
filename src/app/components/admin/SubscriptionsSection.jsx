@@ -37,13 +37,24 @@ export default function SubscriptionsSection() {
       const res = await fetch("/api/admin/payments", {
         credentials: "include",
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (data.success) {
-        setPayments(data.payments || []);
-      } else {
-        setError(data.message);
+      // NOTE: `/api/admin/payments` answers with `{ success, payments }`; the
+      // old check only looked at `success`, so anything that omitted the flag
+      // (or a non-2xx response) silently produced an empty list. Read `res.ok`
+      // first and treat only an explicit `success: false` as a failure.
+      if (!res.ok || data.success === false) {
+        setError(
+          data?.error ||
+            data?.message ||
+            `Failed to load payments (${res.status})`,
+        );
+        setPayments([]);
+        return;
       }
+
+      setPayments(data.payments || []);
+      setError(null);
     } catch (err) {
       setError("Failed to load subscriptions");
     } finally {
@@ -225,9 +236,6 @@ return (
       </div>
 
       <AdminSection
-        eyebrow="Subscriptions"
-        title="Active & expired subscriptions"
-        description="Filter by validity and review each payment window."
         toolbar={
           <AdminToolbar
             actions={

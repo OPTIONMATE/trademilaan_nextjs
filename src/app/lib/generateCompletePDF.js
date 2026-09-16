@@ -1295,6 +1295,34 @@ export async function generateCompleteAgreementPDF(agreementData) {
     let raImageDrawn = false;
     try {
       const raSigBuffer = getRASignatureJpegBuffer();
+      // =====================================================================
+      // TEMPORARY RA-SIGNATURE DIAGNOSTICS (metadata only - no base64, no image
+      // content, no env values). Remove once the runtime bytes are confirmed.
+      // =====================================================================
+      try {
+        const { createHash } = await import("crypto");
+        console.error("[PDF RA DEBUG]", {
+          source: (process.env.RA_SIGNATURE_PATH || "").trim()
+            ? "override (RA_SIGNATURE_PATH set)"
+            : "bundled",
+          isBuffer: Buffer.isBuffer(raSigBuffer),
+          bufferLength: raSigBuffer?.length,
+          first16Hex: raSigBuffer?.subarray(0, 16).toString("hex"),
+          last16Hex: raSigBuffer?.subarray(-16).toString("hex"),
+          isJpegSOI: raSigBuffer?.[0] === 0xff && raSigBuffer?.[1] === 0xd8,
+          isJpegEOI:
+            raSigBuffer?.[raSigBuffer.length - 2] === 0xff &&
+            raSigBuffer?.[raSigBuffer.length - 1] === 0xd9,
+          firstByteIsPrintableAscii:
+            raSigBuffer?.[0] >= 0x20 && raSigBuffer?.[0] < 0x7f,
+          sha256: createHash("sha256")
+            .update(raSigBuffer || Buffer.alloc(0))
+            .digest("hex"),
+        });
+      } catch (diagErr) {
+        console.error("[PDF RA DEBUG] diagnostics failed:", diagErr.message);
+      }
+      // =====================================================================
       if (raSigBuffer && raSigBuffer.length > 0) {
         const raSigImage = await pdfDoc.embedJpg(raSigBuffer);
         // Maintain aspect ratio, max width 120, max height raSigH

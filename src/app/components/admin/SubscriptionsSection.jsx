@@ -1,16 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  CalendarClock,
+  IndianRupee,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
+import AdminSection from "./ui/AdminSection";
+import AdminStatCard from "./ui/AdminStatCard";
+import AdminTable from "./ui/AdminTable";
+import AdminBadge from "./ui/AdminBadge";
+import AdminEmptyState from "./ui/AdminEmptyState";
+import AdminPagination from "./ui/AdminPagination";
+import { AdminFilterTabs, AdminToolbar } from "./ui/AdminToolbar";
+import { usePagination } from "./ui/usePagination";
+
+/**
+ * SubscriptionsSection — /admin-dashboard/subscriptions.
+ *
+ * Same fetch (`/api/admin/payments`), same all/active/expired filter and same
+ * totals; restyled with AdminStatCard + AdminTable and paginated with the
+ * shared AdminPagination.
+ */
+const DEFAULT_PAGE_SIZE = 10;
 
 export default function SubscriptionsSection() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all"); // all, active, expired
-
-  useEffect(() => {
-    fetchAllPayments();
-  }, []);
 
   const fetchAllPayments = async () => {
     try {
@@ -32,6 +51,10 @@ export default function SubscriptionsSection() {
     }
   };
 
+  useEffect(() => {
+    fetchAllPayments();
+  }, []);
+
   const isExpired = (expiresAt) => {
     return new Date(expiresAt) < new Date();
   };
@@ -52,167 +75,205 @@ export default function SubscriptionsSection() {
   const activeCount = payments.filter((p) => !isExpired(p.expiresAt)).length;
   const expiredCount = payments.filter((p) => isExpired(p.expiresAt)).length;
 
+  const {
+    page,
+    pageSize,
+    totalItems,
+    totalPages,
+    pagedItems,
+    setPage,
+    setPageSize,
+  } = usePagination(filteredPayments, DEFAULT_PAGE_SIZE, { resetKey: filter });
+
+const columns = [
+    {
+      key: "name",
+      header: "Name",
+      render: (payment) => (
+        <span className="font-medium text-neutral-900">{payment.name}</span>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      render: (payment) => (
+        <span className="text-sm text-neutral-600">{payment.email}</span>
+      ),
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      render: (payment) => (
+        <span className="text-sm text-neutral-600">{payment.phone}</span>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      align: "right",
+      render: (payment) => (
+        <span className="font-semibold text-neutral-900">
+          ₹{Number(payment.amount || 0).toLocaleString("en-IN")}
+        </span>
+      ),
+    },
+    {
+      key: "validity",
+      header: "Validity",
+      render: (payment) => (
+        <span className="text-sm text-neutral-600">
+          {Number(payment?.planDuration) > 0
+            ? `${Number(payment.planDuration)} days`
+            : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "paidAt",
+      header: "Paid date",
+      render: (payment) => (
+        <span className="text-sm text-neutral-600">
+          {new Date(payment.paidAt).toLocaleDateString("en-IN")}
+        </span>
+      ),
+    },
+    {
+      key: "expiresAt",
+      header: "Expires",
+      render: (payment) => (
+        <span className="text-sm text-neutral-600">
+          {new Date(payment.expiresAt).toLocaleDateString("en-IN")}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (payment) => {
+        const expired = isExpired(payment.expiresAt);
+        return (
+          <AdminBadge tone={expired ? "danger" : "success"} dot>
+            {expired ? "Expired" : "Active"}
+          </AdminBadge>
+        );
+      },
+    },
+    {
+      key: "daysLeft",
+      header: "Days left",
+      align: "right",
+      render: (payment) =>
+        isExpired(payment.expiresAt) ? (
+          <span className="text-sm font-semibold text-red-600">Expired</span>
+        ) : (
+          <span className="text-sm font-semibold text-emerald-700">
+            {getDaysRemaining(payment.expiresAt)} days
+          </span>
+        ),
+    },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime-500"></div>
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-[#9BE749]" />
       </div>
     );
   }
 
-  return (
+return (
     <div className="space-y-6">
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {error}
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50/70 px-4 py-3"
+        >
+          <p className="text-sm font-medium text-red-800">{error}</p>
         </div>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-linear-to-br from-blue-50 to-blue-100/50 rounded-lg p-6 border border-blue-200">
-          <p className="text-sm text-neutral-600 mb-1">Total Revenue</p>
-          <p className="text-3xl font-bold text-blue-600">
-            ₹{totalRevenue.toLocaleString("en-IN")}
-          </p>
-        </div>
-
-        <div className="bg-linear-to-br from-green-50 to-green-100/50 rounded-lg p-6 border border-green-200">
-          <p className="text-sm text-neutral-600 mb-1">Active Plans</p>
-          <p className="text-3xl font-bold text-green-600">{activeCount}</p>
-        </div>
-
-        <div className="bg-linear-to-br from-orange-50 to-orange-100/50 rounded-lg p-6 border border-orange-200">
-          <p className="text-sm text-neutral-600 mb-1">Expired Plans</p>
-          <p className="text-3xl font-bold text-orange-600">{expiredCount}</p>
-        </div>
-
-        <div className="bg-linear-to-br from-purple-50 to-purple-100/50 rounded-lg p-6 border border-purple-200">
-          <p className="text-sm text-neutral-600 mb-1">Total Payments</p>
-          <p className="text-3xl font-bold text-purple-600">
-            {payments.length}
-          </p>
-        </div>
+      {/* Summary cards — same numbers as before, AdminStatCard treatment */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <AdminStatCard
+          label="Total revenue"
+          value={`₹${totalRevenue.toLocaleString("en-IN")}`}
+          sub="All recorded payments"
+          icon={IndianRupee}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Active plans"
+          value={activeCount}
+          sub="Not yet expired"
+          icon={CalendarClock}
+          tone="lime"
+        />
+        <AdminStatCard
+          label="Expired plans"
+          value={expiredCount}
+          sub="Past validity"
+          icon={TrendingUp}
+          tone="warning"
+        />
+        <AdminStatCard
+          label="Total payments"
+          value={payments.length}
+          sub="All transactions"
+          icon={Wallet}
+          tone="purple"
+        />
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-neutral-200">
-        {[
-          { value: "all", label: "All Subscriptions" },
-          { value: "active", label: "Active" },
-          { value: "expired", label: "Expired" },
-        ].map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={`px-4 py-2 font-semibold transition border-b-2 cursor-pointer ${
-              filter === tab.value
-                ? "border-lime-500 text-lime-600"
-                : "border-transparent text-neutral-600 hover:text-neutral-900"
-            }`}
+      <AdminSection
+        eyebrow="Subscriptions"
+        title="Active & expired subscriptions"
+        description="Filter by validity and review each payment window."
+        toolbar={
+          <AdminToolbar
+            actions={
+              <span className="text-sm text-neutral-500">
+                Matching:{" "}
+                <span className="font-semibold text-neutral-900">
+                  {totalItems}
+                </span>
+              </span>
+            }
           >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Subscriptions Table */}
-      {filteredPayments.length === 0 ? (
-        <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-8 text-center">
-          <p className="text-neutral-600">No {filter} subscriptions</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto bg-white rounded-lg border">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50">
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Customer
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Email
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Phone
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Amount
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Validity
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Paid Date
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Expires
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Status
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">
-                  Days Left
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.map((payment) => {
-                const expired = isExpired(payment.expiresAt);
-                const daysLeft = getDaysRemaining(payment.expiresAt);
-
-                return (
-                  <tr
-                    key={payment._id}
-                    className="border-b border-neutral-100 hover:bg-neutral-50 transition"
-                  >
-                    <td className="py-4 px-4 font-semibold text-neutral-900">
-                      {payment.name}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-neutral-600">
-                      {payment.email}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-neutral-600">
-                      {payment.phone}
-                    </td>
-                    <td className="py-4 px-4 font-semibold text-neutral-900">
-                      ₹{payment.amount.toLocaleString("en-IN")}
-                    </td>
-                    <td className="py-4 px-4 text-neutral-600">
-                      {Number(payment?.planDuration) > 0
-                        ? `${Number(payment.planDuration)} days`
-                        : "—"}
-                    </td>
-                    <td className="py-4 px-4 text-neutral-600">
-                      {new Date(payment.paidAt).toLocaleDateString("en-IN")}
-                    </td>
-                    <td className="py-4 px-4 text-neutral-600">
-                      {new Date(payment.expiresAt).toLocaleDateString("en-IN")}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          expired
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {expired ? "Expired" : "Active"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 font-semibold">
-                      {expired ? (
-                        <span className="text-red-600">Expired</span>
-                      ) : (
-                        <span className="text-green-600">{daysLeft} days</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+            <AdminFilterTabs
+              label="Filter"
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { value: "all", label: "All subscriptions" },
+                { value: "active", label: `Active (${activeCount})` },
+                { value: "expired", label: `Expired (${expiredCount})` },
+              ]}
+            />
+          </AdminToolbar>
+        }
+        footer={
+          totalItems > 0 ? (
+            <AdminPagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              itemLabel={totalItems === 1 ? "subscription" : "subscriptions"}
+            />
+          ) : null
+        }
+      >
+        {totalItems === 0 ? (
+          <AdminEmptyState
+            title="No subscriptions found"
+            description="No subscriptions match the selected filter."
+          />
+        ) : (
+          <AdminTable columns={columns} rows={pagedItems} minWidth={1000} />
+        )}
+      </AdminSection>
     </div>
   );
 }

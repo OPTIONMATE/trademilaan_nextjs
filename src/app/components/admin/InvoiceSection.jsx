@@ -1,8 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { X, Download } from "lucide-react";
+import { Download, Loader2, ReceiptText } from "lucide-react";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import AdminSection from "./ui/AdminSection";
+import AdminTable from "./ui/AdminTable";
+import AdminBadge from "./ui/AdminBadge";
+import AdminEmptyState from "./ui/AdminEmptyState";
+import AdminPagination from "./ui/AdminPagination";
+import AdminButton from "./ui/AdminButton";
+import AdminModal from "./ui/AdminModal";
+import { AdminSearchInput, AdminToolbar } from "./ui/AdminToolbar";
+import { usePagination } from "./ui/usePagination";
+
+/**
+ * InvoiceSection — /admin-dashboard/invoices.
+ *
+ * Logic preserved exactly: client-name/amount filter, `formatCurrency`,
+ * `formatDate`, `download-pdf` POST via fetchWithCsrf, `downloading` flag and
+ * `downloadError`. The old bespoke modal container is replaced by the shared
+ * AdminModal (same content, same close behaviour + focus trap / Escape), and
+ * the list is now a paginated AdminTable using the shared AdminPagination.
+ */
+const DEFAULT_PAGE_SIZE = 10;
 
 export default function InvoiceSection({ data }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -10,15 +30,29 @@ export default function InvoiceSection({ data }) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
 
-  // Filter invoices by client name or amount
+  // Filter invoices by client name or amount (unchanged behaviour)
   const filteredData =
     !searchQuery || !data
       ? data
       : data.filter(
           (inv) =>
-            (inv.clientName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.amount?.toString().includes(searchQuery)
+            (inv.clientName || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            inv.amount?.toString().includes(searchQuery),
         );
+
+  const invoices = filteredData || [];
+
+  const {
+    page,
+    pageSize,
+    totalItems,
+    totalPages,
+    pagedItems,
+    setPage,
+    setPageSize,
+  } = usePagination(invoices, DEFAULT_PAGE_SIZE, { resetKey: searchQuery });
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -28,7 +62,7 @@ export default function InvoiceSection({ data }) {
   };
 
   const formatDate = (date) => {
-    if (!date) return "-";
+    if (!date) return "—";
     return new Date(date).toLocaleDateString("en-IN", {
       year: "numeric",
       month: "short",
@@ -69,213 +103,283 @@ export default function InvoiceSection({ data }) {
     }
   };
 
+  const columns = [
+    {
+      key: "invoice",
+      header: "Invoice",
+      render: (inv) => (
+        <div className="min-w-0">
+          <p className="font-medium text-neutral-900">
+            {String(inv._id || "").substring(0, 12)}…
+          </p>
+          <p className="truncate text-xs text-neutral-500">
+            {inv.planName || "—"}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "client",
+      header: "Client",
+      render: (inv) => (
+        <span className="text-sm font-medium text-neutral-800">
+          {inv.clientName || "Unknown client"}
+        </span>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      align: "right",
+      render: (inv) => (
+        <span className="text-sm font-semibold text-neutral-900">
+          {formatCurrency(inv.amount)}
+        </span>
+      ),
+    },
+    {
+      key: "period",
+      header: "Service period",
+      render: (inv) => (
+        <span className="text-sm text-neutral-600">
+          {formatDate(inv.startDate)} → {formatDate(inv.endDate)}
+        </span>
+      ),
+    },
+    {
+      key: "generated",
+      header: "Generated",
+      render: (inv) => (
+        <span className="text-sm text-neutral-600">
+          {formatDate(inv.createdAt)}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Type",
+      render: () => <AdminBadge tone="success">Invoice</AdminBadge>,
+    },
+    {
+      key: "actions",
+      header: "Details",
+      align: "right",
+      render: (inv) => (
+        <AdminButton
+          variant="secondary"
+          size="sm"
+          onClick={() => setSelectedInvoice(inv)}
+          aria-label={`View details for invoice ${inv._id}`}
+        >
+          View Details
+        </AdminButton>
+      ),
+    },
+  ];
+
   if (!data || data.length === 0) {
     return (
-      <div className="border rounded-lg p-8 text-center text-neutral-500 bg-white">
-        <p className="text-lg">No invoices found</p>
-      </div>
+      <AdminSection
+        eyebrow="Billing"
+        title="Invoices"
+        description="Invoices generated for client purchases, with PDF download."
+      >
+        <AdminEmptyState
+          title="No invoices found"
+          description="Invoices will appear here once a purchase completes."
+          icon={ReceiptText}
+        />
+      </AdminSection>
     );
   }
 
   return (
     <>
-      <div className="space-y-4">
-        {/* Search Box */}
-        <div className="border rounded-lg p-4 bg-white">
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
-            Search Invoices
-          </label>
-          <input
-            type="text"
-            placeholder="Search by client name or amount..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900"
+      <AdminSection
+        eyebrow="Billing"
+        title="Invoices"
+        description="Search by client name or amount, then open an invoice for details."
+        toolbar={
+          <AdminToolbar
+            actions={
+              <span className="text-sm text-neutral-500">
+                Total:{" "}
+                <span className="font-semibold text-neutral-900">
+                  {data.length}
+                </span>
+              </span>
+            }
+          >
+            <AdminSearchInput
+              id="admin-invoices-search"
+              label="Search invoices"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery("")}
+              placeholder="Search by client name or amount…"
+              className="sm:w-80"
+            />
+          </AdminToolbar>
+        }
+        footer={
+          totalItems > 0 ? (
+            <AdminPagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              itemLabel={totalItems === 1 ? "invoice" : "invoices"}
+            />
+          ) : null
+        }
+      >
+        {totalItems === 0 ? (
+          <AdminEmptyState
+            title="No invoices match your search"
+            description="Try a different client name or amount."
+            actionLabel="Clear search"
+            onAction={() => setSearchQuery("")}
+            icon={ReceiptText}
           />
-          {searchQuery && (
-            <p className="text-xs text-neutral-500 mt-2">
-              Found {filteredData?.length || 0} invoice(s)
-            </p>
-          )}
-        </div>
-
-        {/* Invoices List */}
-        {filteredData && filteredData.length > 0 ? (
-          <div className="space-y-3">
-            {filteredData.map((inv) => (
-              <div
-                key={inv._id}
-                className="border rounded-lg p-4 bg-white hover:shadow-md transition"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="font-semibold">{inv.clientName || "Unknown Client"}</div>
-                    <div className="text-sm text-neutral-600 mt-1">
-                      Amount: {formatCurrency(inv.amount)}
-                    </div>
-                    <div className="text-xs text-neutral-500 mt-1">
-                      Generated: {formatDate(inv.createdAt)}
-                    </div>
-                  </div>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                    Invoice
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-neutral-500">
-                    ID: {inv._id?.substring(0, 12)}...
-                  </div>
-                  <button
-                    onClick={() => setSelectedInvoice(inv)}
-                    className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition"
-                  >
-                    View Details
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
-          <div className="border rounded-lg p-8 text-center text-neutral-500 bg-white">
-            <p className="text-sm">No invoices match your search</p>
-          </div>
+          <AdminTable columns={columns} rows={pagedItems} minWidth={940} />
         )}
-      </div>
+      </AdminSection>
 
-      {/* Invoice Details Modal */}
       {selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-neutral-900">Invoice Details</h2>
-                <p className="text-sm text-neutral-500 mt-1">{selectedInvoice.clientName}</p>
-              </div>
-              <button
+        <AdminModal
+          open
+          onClose={() => setSelectedInvoice(null)}
+          title="Invoice details"
+          description={selectedInvoice.clientName || undefined}
+          maxWidth="max-w-2xl"
+          footer={
+            <>
+              <AdminButton
+                variant="secondary"
                 onClick={() => setSelectedInvoice(null)}
-                className="p-2 hover:bg-neutral-100 rounded-lg transition"
-                aria-label="Close modal"
-              >
-                <X size={24} className="text-neutral-600" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              {/* Download Error Alert */}
-              {downloadError && (
-                <div className="border border-red-300 rounded-lg p-4 bg-red-50">
-                  <p className="text-sm text-red-700">Error: {downloadError}</p>
-                </div>
-              )}
-
-              {/* Invoice Info */}
-              <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
-                <h3 className="font-semibold text-neutral-900 mb-4">Invoice Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">Invoice ID</p>
-                    <p className="text-sm font-medium text-neutral-900 mt-1">
-                      {selectedInvoice._id}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">
-                      Client Name
-                    </p>
-                    <p className="text-sm font-medium text-neutral-900 mt-1">
-                      {selectedInvoice.clientName || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">
-                      Plan
-                    </p>
-                    <p className="text-sm font-medium text-neutral-900 mt-1">
-                      {selectedInvoice.planName || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">Amount</p>
-                    <p className="text-sm font-bold text-green-600 mt-1">
-                      {formatCurrency(selectedInvoice.amount)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">
-                      Generated Date
-                    </p>
-                    <p className="text-sm font-medium text-neutral-900 mt-1">
-                      {formatDate(selectedInvoice.createdAt)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">Start Date</p>
-                    <p className="text-sm font-medium text-neutral-900 mt-1">
-                      {formatDate(selectedInvoice.startDate)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 uppercase tracking-wide">End Date</p>
-                    <p className="text-sm font-medium text-neutral-900 mt-1">
-                      {formatDate(selectedInvoice.endDate)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Invoice Summary */}
-              <div className="bg-linear-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
-                <h3 className="font-semibold text-neutral-900 mb-3">Summary</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-600">Service Period</span>
-                    <span className="font-medium text-neutral-900">
-                      {formatDate(selectedInvoice.startDate)} to{" "}
-                      {formatDate(selectedInvoice.endDate)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-600">Purchased Validity</span>
-                    <span className="font-medium text-neutral-900">
-                      {Number(selectedInvoice?.planDuration) > 0
-                        ? `${Number(selectedInvoice.planDuration)} days`
-                        : "—"}
-                    </span>
-                  </div>
-                  <div className="border-t border-green-200 pt-2 mt-2 flex justify-between items-center">
-                    <span className="text-neutral-900 font-semibold">Total Amount</span>
-                    <span className="text-xl font-bold text-green-600">
-                      {formatCurrency(selectedInvoice.amount)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-neutral-50 border-t p-6 flex justify-end gap-2">
-              <button
-                onClick={() =>
-                  handleDownloadInvoice(selectedInvoice._id, selectedInvoice.clientName)
-                }
-                disabled={downloading}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium rounded-lg transition flex items-center gap-2"
-              >
-                <Download size={16} />
-                {downloading ? "Downloading..." : "Download PDF"}
-              </button>
-              <button
-                onClick={() => setSelectedInvoice(null)}
-                className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-medium rounded-lg transition"
               >
                 Close
-              </button>
+              </AdminButton>
+              <AdminButton
+                variant="primary"
+                onClick={() =>
+                  handleDownloadInvoice(
+                    selectedInvoice._id,
+                    selectedInvoice.clientName,
+                  )
+                }
+                disabled={downloading}
+              >
+                {downloading ? (
+                  <>
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                    Downloading…
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                    Download PDF
+                  </>
+                )}
+              </AdminButton>
+            </>
+          }
+        >
+          {downloadError && (
+            <div
+              role="alert"
+              className="mb-4 rounded-xl border border-red-200 bg-red-50/70 px-4 py-3"
+            >
+              <p className="text-sm text-red-700">Error: {downloadError}</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4">
+              <h3 className="text-sm font-semibold text-neutral-900">
+                Invoice information
+              </h3>
+              <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <InvoiceDetailItem label="Invoice ID">
+                  <span className="break-all">{selectedInvoice._id}</span>
+                </InvoiceDetailItem>
+                <InvoiceDetailItem label="Client name">
+                  {selectedInvoice.clientName || "N/A"}
+                </InvoiceDetailItem>
+                <InvoiceDetailItem label="Plan">
+                  {selectedInvoice.planName || "N/A"}
+                </InvoiceDetailItem>
+                <InvoiceDetailItem label="Amount">
+                  <span className="text-emerald-700">
+                    {formatCurrency(selectedInvoice.amount)}
+                  </span>
+                </InvoiceDetailItem>
+                <InvoiceDetailItem label="Generated date">
+                  {formatDate(selectedInvoice.createdAt)}
+                </InvoiceDetailItem>
+                <InvoiceDetailItem label="Start date">
+                  {formatDate(selectedInvoice.startDate)}
+                </InvoiceDetailItem>
+                <InvoiceDetailItem label="End date">
+                  {formatDate(selectedInvoice.endDate)}
+                </InvoiceDetailItem>
+              </dl>
+            </div>
+
+            {/* Invoice summary — services info-banner treatment */}
+            <div className="rounded-xl border border-[#9BE749]/30 bg-linear-to-r from-[#9BE749]/10 via-white to-[#6d5bff]/10 p-4">
+              <h3 className="text-sm font-semibold text-neutral-900">Summary</h3>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-neutral-600">
+                    Service period
+                  </span>
+                  <span className="text-sm font-medium text-neutral-900">
+                    {formatDate(selectedInvoice.startDate)} to{" "}
+                    {formatDate(selectedInvoice.endDate)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-neutral-600">
+                    Purchased validity
+                  </span>
+                  <span className="text-sm font-medium text-neutral-900">
+                    {Number(selectedInvoice?.planDuration) > 0
+                      ? `${Number(selectedInvoice.planDuration)} days`
+                      : "—"}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-4 border-t border-[#9BE749]/30 pt-2">
+                  <span className="text-sm font-semibold text-neutral-900">
+                    Total amount
+                  </span>
+                  <span className="text-lg font-bold text-neutral-900">
+                    {formatCurrency(selectedInvoice.amount)}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </AdminModal>
       )}
     </>
+  );
+}
+
+/** Small label/value row used inside the invoice detail modal. */
+function InvoiceDetailItem({ label, children }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-sm font-medium text-neutral-900">{children}</dd>
+    </div>
   );
 }

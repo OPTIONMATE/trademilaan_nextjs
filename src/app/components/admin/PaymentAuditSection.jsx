@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, Download } from "lucide-react";
+import AdminPagination from "./ui/AdminPagination";
 
 export default function PaymentAuditSection() {
   const [payments, setPayments] = useState([]);
@@ -369,42 +370,17 @@ export default function PaymentAuditSection() {
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border border-neutral-200 rounded hover:bg-neutral-50 disabled:opacity-50 cursor-pointer"
-          >
-            Previous
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 rounded cursor-pointer ${
-                currentPage === page
-                  ? "bg-lime-500 text-white"
-                  : "border border-neutral-200 hover:bg-neutral-50"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border border-neutral-200 rounded hover:bg-neutral-50 disabled:opacity-50 cursor-pointer"
-          >
-            Next
-          </button>
-        </div>
+      {/* Pagination — shared admin control (same component as every section) */}
+      {filteredPayments.length > 0 && (
+        <AdminPagination
+          page={currentPage}
+          pageSize={itemsPerPage}
+          totalItems={filteredPayments.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemLabel={filteredPayments.length === 1 ? "payment" : "payments"}
+          emptyMessage="No payments to display on this page."
+        />
       )}
     </div>
   );

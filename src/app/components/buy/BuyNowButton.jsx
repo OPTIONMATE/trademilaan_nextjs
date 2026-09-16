@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import BuyNowModal from "./BuyNowModal";
+import { buyPrimaryButtonClass } from "./BuyFlowShell";
 
 export default function BuyNowButton() {
   const [open, setOpen] = useState(false);
@@ -8,8 +9,9 @@ export default function BuyNowButton() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="bg-green-600 text-white px-6 py-2 rounded"
+        className={buyPrimaryButtonClass}
       >
         Buy Now
       </button>

@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, X } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import ESignModal from "@/app/components/ESignModal";
 import PaymentForm from "@/app/components/buy/PaymentForm";
 import ServiceAgreement from "@/components/ServiceAgreement";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import BuyFlowShell, {
+  BuyActions,
+  buyPrimaryButtonClass,
+  buySecondaryButtonClass,
+  buySuccessClass,
+} from "./BuyFlowShell";
 
 export default function AgreementModal({
   onClose,
@@ -194,37 +201,54 @@ export default function AgreementModal({
     }
   };
 
+  // Payment is its own step of the purchase flow (the agreement is signed by now).
+  if (showPayment) {
+    return (
+      <BuyFlowShell
+        title="Payment"
+        subtitle="Complete your payment to activate your subscription."
+        step={5}
+        planData={planData}
+        onClose={onClose}
+        maxWidth="max-w-4xl"
+      >
+        <PaymentForm
+          onPaymentComplete={handlePaymentComplete}
+          onBack={() => setShowPayment(false)}
+          planData={planData}
+          userDetails={userDetails}
+        />
+      </BuyFlowShell>
+    );
+  }
+
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border relative overflow-hidden">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-xl text-gray-600 hover:text-black"
-          >
-            ✕
-          </button>
-
-          <div className="p-6 max-h-[80vh] overflow-y-auto">
-            {/* ======================= PAYMENT FORM ======================= */}
-            {showPayment ? (
-              <PaymentForm
-                onPaymentComplete={handlePaymentComplete}
-                onBack={() => setShowPayment(false)}
-                planData={planData}
-                userDetails={userDetails}
-              />
-            ) : paymentResult ? (
-              <div className="flex flex-col items-center justify-center h-screen">
+      <BuyFlowShell
+        title="Service Agreement"
+        subtitle="Review the agreement, E-Sign it and continue to payment."
+        step={4}
+        planData={planData}
+        onClose={onClose}
+        maxWidth="max-w-4xl"
+      >
+        {paymentResult ? (
+          <div className="space-y-5 text-center">
                 {paymentResult.success ? (
                   <>
-                    <h2 className="text-2xl font-bold text-green-600 mb-4">
-                      Payment Successful!
-                    </h2>
-                    <p className="text-lg">Thank you for your payment.</p>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#9BE749]/20">
+                      <Check className="h-6 w-6 text-[#4c7a13]" aria-hidden="true" />
+                    </div>
+                    <h3 className="text-lg font-bold text-neutral-900">
+                      Payment successful
+                    </h3>
+                    <p className="text-sm text-neutral-600">
+                      Thank you for your payment. Your subscription is now active.
+                    </p>
                     {paymentResult.razorpay_payment_id ? (
                       <button
-                        className="mt-4 px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                        type="button"
+                        className={buyPrimaryButtonClass}
                         onClick={async () => {
                           const planLabel =
                             paymentResult.planName ||
@@ -264,12 +288,9 @@ export default function AgreementModal({
 
                     ) : (
                       <>
-                        <h2 className="text-2xl font-bold text-green-600 mb-4">
-                          Payment Successful!
-                        </h2>
-                        <p className="text-lg">Thank you for your payment.</p>
                         <button
-                          className="mt-4 px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                          type="button"
+                          className={buyPrimaryButtonClass}
                           onClick={async () => {
                             const params = new URLSearchParams({
                               payment_id: paymentResult.razorpay_payment_id,
@@ -299,30 +320,51 @@ export default function AgreementModal({
                   </>
                 ) : (
                   <>
-                    <h2 className="text-2xl font-bold text-red-600 mb-4">
-                      Payment Failed
-                    </h2>
-                    <p className="text-lg">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                      <X className="h-6 w-6 text-red-600" aria-hidden="true" />
+                    </div>
+                    <h3 className="text-lg font-bold text-neutral-900">
+                      Payment failed
+                    </h3>
+                    <p className="text-sm text-neutral-600">
                       {paymentResult.error ||
                         "Payment was not successful. Please try again."}
                     </p>
                   </>
                 )}
-                <button
-                  onClick={() => setShowPayment(false)}
-                  className="mt-6 px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-                >
-                  Back
-                </button>
+
+                {paymentResult.success ? (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className={buySecondaryButtonClass}
+                  >
+                    Done
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Retry from a clean payment state (the previous Back
+                      // button was a dead end when the payment failed).
+                      setPaymentResult(null);
+                      setShowPayment(true);
+                    }}
+                    className={buyPrimaryButtonClass}
+                  >
+                    Try payment again
+                  </button>
+                )}
               </div>
             ) : (
               <>
                 {/* ======================= SIGNED AGREEMENT REVIEW THEN PAYMENT THEN DOWNLOAD ======================= */}
                 {showSign ? null : signedFileId ? (
                   <>
-                    <h2 className="text-xl font-semibold mb-4">
-                      ✓ Agreement Successfully Signed
-                    </h2>
+                    <p className={buySuccessClass}>
+                      ✓ Agreement signed successfully. Your signature appears in
+                      the document below.
+                    </p>
                     <ServiceAgreement
                       clientName={kycClientName}
                       clientPan={kycPan}
@@ -346,27 +388,21 @@ export default function AgreementModal({
                           : new Date().toLocaleDateString("en-IN")
                       }
                     />
-                    <div className="flex flex-col gap-3 mt-6 border-t pt-4">
-                      {/* Download Button - Direct PDF download */}
+                    <div className="mt-6 flex flex-col gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:items-center sm:justify-end">
                       <a
                         href={`/api/agreement/download/${signedFileId}`}
                         download={`agreement-${signedFileId}.pdf`}
-                        className="px-6 py-3 rounded-lg bg-green-600 text-white hover:bg-green-700 text-center font-semibold flex items-center justify-center gap-2"
+                        className={buySecondaryButtonClass}
                       >
-                        <span>📥</span> Download Signed Agreement (PDF)
+                        Download signed agreement (PDF)
                       </a>
 
-                      {/* Payment Button */}
                       <button
+                        type="button"
                         onClick={() => setShowPayment(true)}
-                        disabled={showPayment}
-                        className={`px-6 py-3 rounded-lg font-semibold text-center ${
-                          showPayment
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-purple-600 text-white hover:bg-purple-700"
-                        }`}
+                        className={buyPrimaryButtonClass}
                       >
-                        Continue to Payment
+                        Continue to payment
                       </button>
                     </div>
                   </>
@@ -386,34 +422,33 @@ export default function AgreementModal({
                       planStartDate={new Date()}
                       signedDate={new Date().toLocaleDateString("en-IN")}
                     />
-                    <div className="mt-2">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => setChecked(e.target.checked)}
-                        />
-                        I have read the Agreement and will proceed to E-Sign.
-                      </label>
+                    <label className="mt-4 flex items-start gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-800">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => setChecked(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-neutral-300 accent-[#9BE749]"
+                      />
+                      <span>
+                        I have read the agreement and will proceed to E-Sign.
+                      </span>
+                    </label>
+
+                    <BuyActions>
                       <button
+                        type="button"
                         onClick={handleSubmit}
                         disabled={!checked}
-                        className={`mt-4 px-4 py-2 rounded-lg text-white ${
-                          checked
-                            ? "bg-purple-600 hover:bg-purple-700"
-                            : "bg-gray-400"
-                        }`}
+                        className={buyPrimaryButtonClass}
                       >
-                        Submit & Continue
+                        Accept &amp; E-Sign
                       </button>
-                    </div>
+                    </BuyActions>
                   </>
                 )}
               </>
             )}
-          </div>
-        </div>
-      </div>
+      </BuyFlowShell>
 
       {/* ======================= SIGN MODAL ======================= */}
       {showSign && (

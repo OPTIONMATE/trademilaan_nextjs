@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { Check, X } from "lucide-react";
+import {
+  buyErrorClass,
+  buyInputClass,
+  buyLabelClass,
+  buyPrimaryButtonClass,
+  buySecondaryButtonClass,
+} from "./BuyFlowShell";
+
+// Spinner styled like the rest of the flow (Services-page lime accent).
+function Spinner() {
+  return (
+    <div
+      className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-neutral-200 border-t-[#9BE749]"
+      aria-hidden="true"
+    />
+  );
+}
 
 export default function PaymentForm({
   onPaymentComplete,
@@ -10,7 +28,9 @@ export default function PaymentForm({
 }) {
   const { user } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  // Billing details: only user-typed values live in state; the account record
+  // and the KYC name from the details step supply the initial values.
+  const [billingEdits, setBillingEdits] = useState({});
   const [loading, setLoading] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [error, setError] = useState("");
@@ -28,29 +48,19 @@ export default function PaymentForm({
 
   const kycFullName = userDetails?.fullName?.trim() || "";
 
-  // ✅ Auto-fill form with user data
-  useEffect(() => {
-    if (user) {
-      const preferredName =
-        user.fullName ||
-        user.name ||
-        user.username ||
-        (user.email ? String(user.email).split("@")[0] : "");
+  const accountName =
+    user?.fullName ||
+    user?.name ||
+    user?.username ||
+    (user?.email ? String(user.email).split("@")[0] : "");
 
-      setForm((prevForm) => ({
-        ...prevForm,
-        name: preferredName,
-        email: user.email || "",
-      }));
-    }
-  }, [user]);
-
-  // Prefer KYC name from Buy Details step when present (matches invoice / verify)
-  useEffect(() => {
-    if (kycFullName) {
-      setForm((prev) => ({ ...prev, name: kycFullName }));
-    }
-  }, [kycFullName]);
+  // Prefilled from the account / KYC step, editable at any time: a typed value
+  // always wins over the prefilled one.
+  const form = {
+    name: billingEdits.name ?? (kycFullName || accountName),
+    email: billingEdits.email ?? (user?.email || ""),
+    phone: billingEdits.phone ?? "",
+  };
 
   // ✅ Load Razorpay SDK
   useEffect(() => {
@@ -63,7 +73,8 @@ export default function PaymentForm({
   }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setBillingEdits((prev) => ({ ...prev, [name]: value }));
   };
 
   const formatDateLabel = (dateValue) => {
@@ -282,22 +293,18 @@ export default function PaymentForm({
 
   if (isVerifyingPayment) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-linear-to-br from-indigo-100 via-white to-indigo-50">
-        <div className="flex flex-col items-center gap-6">
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-green-600 border-r-green-600 animate-spin"></div>
-          </div>
-
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Payment Received
-            </h2>
-            <p className="text-gray-600 mb-1">
-              Verifying payment and preparing your invoice...
-            </p>
-            <p className="text-sm text-gray-500">Please do not close this window.</p>
-          </div>
+      <div className="space-y-4 py-10 text-center">
+        <Spinner />
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold text-neutral-900">
+            Payment received
+          </h3>
+          <p className="text-sm text-neutral-600">
+            Verifying your payment and preparing your invoice...
+          </p>
+          <p className="text-xs text-neutral-500">
+            Please do not close this window.
+          </p>
         </div>
       </div>
     );
@@ -308,42 +315,42 @@ export default function PaymentForm({
     // Show loader while invoice is being generated
     if (success && !verifyData) {
       return (
-        <div className="flex flex-col items-center justify-center h-screen bg-linear-to-br from-indigo-100 via-white to-indigo-50">
-          <div className="flex flex-col items-center gap-6">
-            {/* Spinner */}
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-green-600 border-r-green-600 animate-spin"></div>
-            </div>
+        <div className="space-y-4 py-10 text-center">
+          <Spinner />
             
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Processing Your Payment
-              </h2>
-              <p className="text-gray-600 mb-1">Generating and sending invoice...</p>
-              <p className="text-sm text-gray-500">This may take a few seconds</p>
-            </div>
+            <div className="space-y-1">
+            <h3 className="text-lg font-bold text-neutral-900">
+              Processing your payment
+            </h3>
+            <p className="text-sm text-neutral-600">
+              Generating and sending your invoice...
+            </p>
+            <p className="text-xs text-neutral-500">
+              This may take a few seconds.
+            </p>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
+      <div className="space-y-5 py-6 text-center">
         {success ? (
           <>
-            <h2 className="text-2xl font-bold text-green-600 mb-4">
-              Payment Successful!
-            </h2>
-            <p>Thank you for your payment.</p>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#9BE749]/20">
+              <Check className="h-6 w-6 text-[#4c7a13]" aria-hidden="true" />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-900">
+              Payment successful
+            </h3>
+            <p className="text-sm text-neutral-600">
+              Thank you for your payment.
+            </p>
 
             <button
+              type="button"
               disabled={!verifyData}
-              className={`mt-4 px-6 py-2 rounded-lg ${
-                verifyData
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-300 text-gray-500"
-              }`}
+              className={buyPrimaryButtonClass}
               onClick={async () => {
                 const invoiceName = kycFullName || form.name;
                 const params = new URLSearchParams({
@@ -377,192 +384,211 @@ export default function PaymentForm({
           </>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-red-600 mb-4">
-              Payment Failed
-            </h2>
-            <p>{error}</p>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <X className="h-6 w-6 text-red-600" aria-hidden="true" />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-900">Payment failed</h3>
+            <p className="text-sm text-neutral-600">{error}</p>
             {errorCode === "ACTIVE_SUBSCRIPTION_EXISTS" && (
               <button
+                type="button"
                 onClick={() => router.push("/my-subscriptions")}
-                className="mt-4 px-6 py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition"
+                className={buyPrimaryButtonClass}
               >
-                Go to My Subscriptions
+                Go to my subscriptions
               </button>
             )}
           </>
         )}
 
-        <button onClick={onBack} className="mt-6 px-6 py-2 border rounded">
-          Back
-        </button>
+        <div className="flex flex-col-reverse gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            onClick={onBack}
+            className={buySecondaryButtonClass}
+          >
+            Back
+          </button>
+        </div>
       </div>
     );
   }
 
   // ✅ Main Form
   return (
-    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-indigo-100 via-white to-indigo-50 px-4">
-      <form
-        onSubmit={handlePayment}
-        className="bg-white/80 backdrop-blur-lg p-10 rounded-2xl shadow-2xl w-full max-w-3xl border border-gray-200"
-      >
-        <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
-          Secure Payment
-        </h2>
+    <form onSubmit={handlePayment} className="space-y-6">
+      <p className="text-sm text-neutral-600">
+        Payments are processed securely by Razorpay. Your invoice is emailed to
+        you after a successful payment.
+      </p>
 
-        <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 p-4">
-          <div className="flex items-center justify-between text-sm text-gray-700">
-            <span className="font-medium">Plan</span>
-            <span className="font-semibold">{selectedPlanName}</span>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
-            <span className="font-medium">Amount</span>
-            <span className="font-semibold">Rs. {selectedAmount}</span>
-          </div>
-          {discountAmount > 0 && (
-            <div className="mt-2 flex items-center justify-between text-sm text-green-700">
-              <span className="font-medium">Coupon Discount</span>
-              <span className="font-semibold">
-                - Rs. {Math.round(discountAmount)}
-              </span>
-            </div>
-          )}
-          <div className="mt-2 flex items-center justify-between text-base text-gray-900">
-            <span className="font-semibold">Payable</span>
-            <span className="font-bold">Rs. {Math.round(finalAmount)}</span>
-          </div>
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+        <div className="flex items-center justify-between text-sm text-neutral-700">
+          <span className="font-medium">Plan</span>
+          <span className="font-semibold text-neutral-900">
+            {selectedPlanName}
+          </span>
         </div>
-
-        {/* Form Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Name */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Name
-            </label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              placeholder="Enter your name"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none transition"
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Email
-            </label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none transition"
-            />
-          </div>
-
-          {/* Phone */}
-          <div className="md:col-span-2">
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Phone
-            </label>
-            <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              required
-              placeholder="Enter your phone number"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none transition"
-            />
-          </div>
+        <div className="mt-2 flex items-center justify-between text-sm text-neutral-700">
+          <span className="font-medium">Amount</span>
+          <span className="font-semibold text-neutral-900">
+            Rs. {selectedAmount}
+          </span>
         </div>
-
-        {/* Coupon Section */}
-        <div className="mt-8">
-          <label className="block mb-3 text-sm font-medium text-gray-700">
-            Have a Coupon Code? (Optional)
-          </label>
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between p-4 bg-green-50 border border-green-300 rounded-lg">
-              <div>
-                <p className="font-semibold text-green-900">✓ Coupon Applied</p>
-                <p className="text-sm text-green-700 mt-1">
-                  Code:{" "}
-                  <span className="font-mono font-bold">
-                    {appliedCoupon.code}
-                  </span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setAppliedCoupon(null);
-                  setCouponCode("");
-                  setCouponError("");
-                }}
-                className="text-green-700 hover:text-green-900 font-semibold"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                placeholder="Enter coupon code"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-lime-400 outline-none transition font-mono uppercase"
-                disabled={couponLoading}
-              />
-              <button
-                type="button"
-                onClick={handleVerifyCoupon}
-                disabled={couponLoading || !couponCode.trim()}
-                className="px-6 py-2 bg-lime-500 text-white font-semibold rounded-lg hover:bg-lime-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {couponLoading ? "Checking..." : "Apply"}
-              </button>
-            </div>
-          )}
-          {couponError && (
-            <p className="mt-2 text-sm text-red-600 font-medium">
-              {couponError}
-            </p>
-          )}
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="mt-4 text-red-500 text-center font-medium">
-            {error}
+        {discountAmount > 0 && (
+          <div className="mt-2 flex items-center justify-between text-sm text-[#3f6d13]">
+            <span className="font-medium">Coupon discount</span>
+            <span className="font-semibold">
+              - Rs. {Math.round(discountAmount)}
+            </span>
           </div>
         )}
-
-        {/* Buttons */}
-        <div className="mt-8 flex gap-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-1/3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-          >
-            Back
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading || !planData?.planId || !selectedAmount}
-            className="w-2/3 py-2 rounded-lg text-white font-semibold bg-linear-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition shadow-md"
-          >
-            {loading ? "Processing..." : "Continue with Payment"}
-          </button>
+        <div className="mt-3 flex items-center justify-between border-t border-neutral-200 pt-3 text-base text-neutral-900">
+          <span className="font-semibold">Payable</span>
+          <span className="font-bold">Rs. {Math.round(finalAmount)}</span>
         </div>
-      </form>
-    </div>
+      </div>
+
+        {/* Form Grid */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label
+            htmlFor="payment-name"
+            className={`mb-2 block ${buyLabelClass}`}
+          >
+            Name
+          </label>
+          <input
+            id="payment-name"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            required
+            placeholder="Name on the invoice"
+            className={buyInputClass}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="payment-email"
+            className={`mb-2 block ${buyLabelClass}`}
+          >
+            Email
+          </label>
+          <input
+            id="payment-email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+            placeholder="you@example.com"
+            className={buyInputClass}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label
+            htmlFor="payment-phone"
+            className={`mb-2 block ${buyLabelClass}`}
+          >
+            Phone
+          </label>
+          <input
+            id="payment-phone"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            required
+            placeholder="10-digit mobile number"
+            className={buyInputClass}
+          />
+        </div>
+      </div>
+
+        {/* Coupon */}
+      <div>
+        <label
+          htmlFor="coupon-code"
+          className={`mb-3 block ${buyLabelClass}`}
+        >
+          Have a coupon code? (optional)
+        </label>
+        {appliedCoupon ? (
+          <div className="flex items-center justify-between rounded-xl border border-[#9BE749]/40 bg-[#9BE749]/10 p-4">
+            <div>
+              <p className="text-sm font-semibold text-[#3f6d13]">
+                Coupon applied
+              </p>
+              <p className="mt-1 text-sm text-neutral-700">
+                Code:{" "}
+                <span className="font-mono font-bold">{appliedCoupon.code}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setAppliedCoupon(null);
+                setCouponCode("");
+                setCouponError("");
+              }}
+              className="cursor-pointer text-sm font-semibold text-neutral-700 underline decoration-neutral-300 underline-offset-4 transition hover:text-neutral-900"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              id="coupon-code"
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="Enter coupon code"
+              className={`${buyInputClass} font-mono uppercase sm:flex-1`}
+              disabled={couponLoading}
+            />
+            <button
+              type="button"
+              onClick={handleVerifyCoupon}
+              disabled={couponLoading || !couponCode.trim()}
+              className={buySecondaryButtonClass}
+            >
+              {couponLoading ? "Checking..." : "Apply"}
+            </button>
+          </div>
+        )}
+        {couponError && (
+          <p role="alert" className="mt-2 text-sm font-medium text-red-600">
+            {couponError}
+          </p>
+        )}
+      </div>
+
+      {error && (
+        <p role="alert" aria-live="assertive" className={buyErrorClass}>
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-col-reverse gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:items-center sm:justify-end">
+        <button
+          type="button"
+          onClick={onBack}
+          className={buySecondaryButtonClass}
+        >
+          Back
+        </button>
+
+        <button
+          type="submit"
+          disabled={loading || !planData?.planId || !selectedAmount}
+          className={buyPrimaryButtonClass}
+        >
+          {loading ? "Processing..." : "Continue with payment"}
+        </button>
+      </div>
+    </form>
   );
 }

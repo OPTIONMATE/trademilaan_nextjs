@@ -42,19 +42,19 @@ export function Navbar() {
     <header className="fixed top-3 sm:top-4 inset-x-0 z-50 flex justify-center px-3 sm:px-4">
       <div
         className={cn(
-          "flex items-center justify-between gap-2 sm:gap-3 md:gap-6 rounded-full border px-3 sm:px-4 md:px-5 py-2 w-full max-w-screen-xl",
+          "flex items-center justify-between gap-2 sm:gap-3 md:gap-6 rounded-full border px-3 sm:px-4 md:px-5 py-2 w-full max-w-screen-xl relative",
           "bg-white/90 backdrop-blur-sm shadow-[0_6px_18px_rgba(0,0,0,0.12)]",
         )}
       >
-        {/* Logo */}
-        <div className="shrink-0 min-w-0">
+        {/* Logo — centered on mobile only (absolute), normal flow on desktop */}
+        <div className="shrink-0 min-w-0 absolute left-1/2 -translate-x-1/2 lg:static lg:left-auto lg:translate-x-0">
           <Link
             href="/"
             className="flex items-center gap-2"
             onClick={closeMobile}
           >
-            <p className="text-sm sm:text-base md:text-lg font-semibold leading-tight truncate">
-              trademilaan
+            <p className="text-md sm:text-base md:text-lg font-semibold leading-tight truncate">
+              Trademilaan
             </p>
           </Link>
         </div>
@@ -70,12 +70,12 @@ export function Navbar() {
           </Menu>
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile menu button — pinned to the left corner on mobile only */}
         <button
           aria-label="Open menu"
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
-          className="inline-flex items-center justify-center gap-2 rounded-full border md:border-0 px-2.5 py-1.5 lg:hidden"
+          className="inline-flex items-center justify-center gap-2 rounded-full border md:border-0 px-2.5 py-1.5 lg:hidden order-first lg:order-none"
           onClick={() => setMobileOpen((v) => !v)}
         >
           <svg

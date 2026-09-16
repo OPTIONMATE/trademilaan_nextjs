@@ -1238,6 +1238,9 @@ export default function ServiceAgreement({
                   </p>
                 </div>
                 <div className="p-8 flex flex-col items-center justify-center">
+                  <div className="mb-2 flex min-h-[60px] items-center justify-center">
+                    <RASignature />
+                  </div>
                   <p className="text-xs font-bold text-center mt-1">
                     Signature (RA)
                   </p>

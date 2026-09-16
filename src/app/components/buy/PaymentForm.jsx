@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
+import { profileValueFromUserRecord } from "@/app/lib/profileFields";
 import {
   buyErrorClass,
   buyInputClass,
@@ -47,6 +48,11 @@ export default function PaymentForm({
     Number(String(planData?.price ?? "").replace(/[^\d.]/g, "")) || 0;
 
   const kycFullName = userDetails?.fullName?.trim() || "";
+  // Phone priority: freshest KYC value from the details step first, then the
+  // saved account record (AuthContext already carries the serialized user, so
+  // no extra request and no new backend endpoint).
+  const kycPhone = profileValueFromUserRecord("phone", userDetails?.phone);
+  const accountPhone = profileValueFromUserRecord("phone", user?.phone);
 
   const accountName =
     user?.fullName ||
@@ -59,7 +65,7 @@ export default function PaymentForm({
   const form = {
     name: billingEdits.name ?? (kycFullName || accountName),
     email: billingEdits.email ?? (user?.email || ""),
-    phone: billingEdits.phone ?? "",
+    phone: billingEdits.phone ?? (kycPhone || accountPhone),
   };
 
   // ✅ Load Razorpay SDK
@@ -74,7 +80,9 @@ export default function PaymentForm({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setBillingEdits((prev) => ({ ...prev, [name]: value }));
+    const nextValue =
+      name === "phone" ? value.replace(/\D/g, "").slice(0, 10) : value;
+    setBillingEdits((prev) => ({ ...prev, [name]: nextValue }));
   };
 
   const formatDateLabel = (dateValue) => {
@@ -498,6 +506,10 @@ export default function PaymentForm({
           <input
             id="payment-phone"
             name="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={10}
             value={form.phone}
             onChange={handleChange}
             required

@@ -430,7 +430,7 @@ export default function AgreementModal({
                         className="mt-0.5 h-4 w-4 rounded border-neutral-300 accent-[#9BE749]"
                       />
                       <span>
-                        I have read the agreement and will proceed to E-Sign.
+                        I have read the <span className="font-semibold text-purple-500">agreement</span> and will <span className="font-semibold text-purple-500">proceed to E-Sign.</span>.
                       </span>
                     </label>
 

@@ -21,9 +21,13 @@ export const BUY_STEPS = [
 // Resend cadence for the purchase OTP — same 60s cooldown as registration.
 export const OTP_RESEND_COOLDOWN = 60;
 
-// Inputs — same treatment as the registration form (components/AuthForm.jsx).
+// Inputs — same treatment as the registration form (components/AuthForm.jsx):
+// rounded-xl, neutral border, lime focus ring. White surface on the white card
+// so every box reads as an editable field, never as plain text; the
+// stronger default border + light inner shadow give the boxes their outline
+// even when the page holds explanatory copy around them.
 export const buyInputClass =
-  "w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 shadow-inner shadow-neutral-100 outline-none transition placeholder:text-neutral-400 focus:border-lime-400 focus:ring-2 focus:ring-lime-200 disabled:cursor-not-allowed disabled:bg-neutral-50";
+  "w-full rounded-xl border border-neutral-300 bg-neutral-100/80 px-4 py-3 text-sm font-medium text-neutral-900 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] outline-none transition placeholder:font-normal placeholder:text-neutral-400 hover:border-neutral-400 focus:border-lime-400 focus:ring-2 focus:ring-lime-200 disabled:cursor-not-allowed disabled:bg-neutral-100";
 
 export const buyLabelClass = "text-sm font-semibold text-neutral-800";
 
@@ -55,12 +59,33 @@ export function BuySectionHeading({ children, description }) {
   );
 }
 
-export function BuyField({ label, htmlFor, hint, error, children, className = "" }) {
+export function BuyField({
+  label,
+  htmlFor,
+  hint,
+  error,
+  filled,
+  badge,
+  children,
+  className = "",
+}) {
+  // `filled` (boolean) and `badge` ("Saved" string) are aliases — the details
+  // form passes `badge={savedBadgeFor(...)}` while older call sites may pass
+  // `filled`. Either one marks a pre-filled-but-editable value.
+  const badgeLabel =
+    typeof badge === "string" && badge.length > 0
+      ? badge
+      : filled
+        ? "Saved"
+        : "";
   return (
     <div className={className}>
-      <label htmlFor={htmlFor} className={`mb-2 block ${buyLabelClass}`}>
-        {label}
-      </label>
+      <div className="mb-2 flex items-center gap-2">
+        <label htmlFor={htmlFor} className={`block ${buyLabelClass}`}>
+          {label}
+        </label>
+        
+      </div>
       {children}
       {hint && !error && (
         <p className="mt-1 text-xs text-neutral-500">{hint}</p>

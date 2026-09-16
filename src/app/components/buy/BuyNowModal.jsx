@@ -1043,8 +1043,8 @@ export default function BuyNowModal({ onClose, planData }) {
               className="mt-0.5 h-4 w-4 rounded border-neutral-300 accent-[#9BE749]"
             />
             <span>
-              I have read and accept the Terms &amp; Conditions, MITC and the
-              refund policy.
+              I have read and accept the <span className="font-semibold text-purple-500">Terms &amp; Conditions</span>, <span className="font-semibold text-purple-500">MITC</span> and the <span> </span>
+               <span className="font-semibold text-purple-500">refund policy</span>.
             </span>
           </label>
 

@@ -7,7 +7,6 @@ import { profileValueFromUserRecord, sanitizeProfileInput } from "@/app/lib/prof
 import {
   BuyActions,
   BuyField,
-  BuySectionHeading,
   buyErrorClass,
   buyInfoClass,
   buyInputClass,
@@ -176,140 +175,145 @@ export default function BuyDetailsForm({ onSuccess, onBack }) {
   // select would silently fall back to the placeholder.
   const hasUnknownState = Boolean(form.state) && !STATES.includes(form.state);
 
+  // "Saved" marks a field whose value came from the account record and the
+  // user has not touched yet. It disappears as soon as the user types, so a
+  // pre-filled value and a typed value never look ambiguous.
+  const savedBadgeFor = (field) =>
+    prefilledFields.includes(field) ? "Saved" : undefined;
+
   return (
     <form onSubmit={submit} noValidate className="space-y-6">
       {prefilledFields.length > 0 && (
         <p className={buyInfoClass}>
-          We pre-filled the details already saved on your account. Every field
-          stays editable — change anything that needs updating.
+          Details already saved on your account are shown inside the boxes
+          below. Every box is editable — click any value to change it.
         </p>
       )}
       {authLoading && prefilledFields.length === 0 && (
         <p className="text-xs text-neutral-500">Loading your saved details…</p>
       )}
 
-      <section>
-        <BuySectionHeading description="Used on the service agreement and your invoice.">
-          Personal Information
-        </BuySectionHeading>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <BuyField
-            label="Full Name"
-            htmlFor="buy-full-name"
-            className="sm:col-span-2"
+      <div className="grid gap-4 sm:grid-cols-2">
+        <BuyField
+          label="Full Name"
+          htmlFor="buy-full-name"
+          badge={savedBadgeFor("fullName")}
+          className="sm:col-span-2"
+        >
+          <input
+            id="buy-full-name"
+            name="fullName"
+            type="text"
+            autoComplete="name"
+            placeholder="Your full name"
+            value={form.fullName}
+            onChange={update}
+            className={buyInputClass}
+          />
+        </BuyField>
+
+        <BuyField
+          label="Date of Birth"
+          htmlFor="buy-dob"
+          hint="You must be 18 years or older."
+          badge={savedBadgeFor("dob")}
+        >
+          <input
+            id="buy-dob"
+            name="dob"
+            type="date"
+            value={form.dob}
+            onChange={update}
+            className={buyInputClass}
+          />
+        </BuyField>
+
+        <BuyField
+          label="Gender"
+          htmlFor="buy-gender"
+          badge={savedBadgeFor("gender")}
+        >
+          <select
+            id="buy-gender"
+            name="gender"
+            value={form.gender}
+            onChange={update}
+            className={buyInputClass}
           >
-            <input
-              id="buy-full-name"
-              name="fullName"
-              type="text"
-              autoComplete="name"
-              placeholder="Your full name"
-              value={form.fullName}
-              onChange={update}
-              className={buyInputClass}
-            />
-          </BuyField>
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </BuyField>
 
-          <BuyField
-            label="Date of Birth"
-            htmlFor="buy-dob"
-            hint="You must be 18 years or older."
+        <BuyField
+          label="State"
+          htmlFor="buy-state"
+          badge={savedBadgeFor("state")}
+          className="sm:col-span-2"
+        >
+          <select
+            id="buy-state"
+            name="state"
+            value={form.state}
+            onChange={update}
+            className={buyInputClass}
           >
-            <input
-              id="buy-dob"
-              name="dob"
-              type="date"
-              value={form.dob}
-              onChange={update}
-              className={buyInputClass}
-            />
-          </BuyField>
+            <option value="">Select state / UT</option>
+            {hasUnknownState && (
+              <option value={form.state}>{form.state}</option>
+            )}
+            {STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+        </BuyField>
 
-          <BuyField label="Gender" htmlFor="buy-gender">
-            <select
-              id="buy-gender"
-              name="gender"
-              value={form.gender}
-              onChange={update}
-              className={buyInputClass}
-            >
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </BuyField>
+        <BuyField
+          label="Email"
+          htmlFor="buy-email"
+          badge={savedBadgeFor("email")}
+        >
+          <input
+            id="buy-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={update}
+            className={buyInputClass}
+          />
+        </BuyField>
 
-          <BuyField
-            label="State"
-            htmlFor="buy-state"
-            className="sm:col-span-2"
-          >
-            <select
-              id="buy-state"
-              name="state"
-              value={form.state}
-              onChange={update}
-              className={buyInputClass}
-            >
-              <option value="">Select state / UT</option>
-              {hasUnknownState && (
-                <option value={form.state}>{form.state}</option>
-              )}
-              {STATES.map((state) => (
-                <option key={state} value={state}>
-                  {state}
-                </option>
-              ))}
-            </select>
-          </BuyField>
-        </div>
-      </section>
+        <BuyField
+          label="Phone Number"
+          htmlFor="buy-phone"
+          badge={savedBadgeFor("phone")}
+        >
+          <input
+            id="buy-phone"
+            name="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={10}
+            placeholder="10-digit mobile number"
+            value={form.phone}
+            onChange={update}
+            className={buyInputClass}
+          />
+        </BuyField>
 
-      <section>
-        <BuySectionHeading description="Your verification code is sent to this email address.">
-          Contact Information
-        </BuySectionHeading>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <BuyField label="Email" htmlFor="buy-email">
-            <input
-              id="buy-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={update}
-              className={buyInputClass}
-            />
-          </BuyField>
-
-          <BuyField label="Phone Number" htmlFor="buy-phone">
-            <input
-              id="buy-phone"
-              name="phone"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              maxLength={10}
-              placeholder="10-digit mobile number"
-              value={form.phone}
-              onChange={update}
-              className={buyInputClass}
-            />
-          </BuyField>
-        </div>
-      </section>
-
-      <section>
-        <BuySectionHeading description="Required for KYC and the service agreement.">
-          Identity Information
-        </BuySectionHeading>
         <BuyField
           label="PAN Number"
           htmlFor="buy-pan"
           hint="Format: AAAAA9999A"
-          className="sm:max-w-sm"
+          badge={savedBadgeFor("panNumber")}
+          className="sm:col-span-2 sm:max-w-sm"
         >
           <input
             id="buy-pan"
@@ -323,7 +327,7 @@ export default function BuyDetailsForm({ onSuccess, onBack }) {
             className={`${buyInputClass} uppercase`}
           />
         </BuyField>
-      </section>
+      </div>
 
       {error && (
         <p role="alert" aria-live="assertive" className={buyErrorClass}>

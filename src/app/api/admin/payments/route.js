@@ -29,7 +29,9 @@ export async function GET() {
       .select("-razorpay_signature -razorpay_key_id")
       .lean();
 
-    return NextResponse.json({ payments });
+    // `success` keeps this route in line with the other admin endpoints
+    // (e.g. /api/admin/payments-audit) so consumers can rely on one shape.
+    return NextResponse.json({ success: true, payments });
   } catch (error) {
     console.error("Admin payments error:", error.message);
     return NextResponse.json(

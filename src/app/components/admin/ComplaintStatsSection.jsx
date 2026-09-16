@@ -219,16 +219,7 @@ export default function ComplaintStatsSection() {
   return (
     <div className="space-y-8">
       <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Monthly Complaint Statistics
-            </h2>
-            <p className="text-sm text-neutral-600">
-              Update complaint metrics here and make them visible on the public
-              Complaints Table page.
-            </p>
-          </div>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={handleSave}

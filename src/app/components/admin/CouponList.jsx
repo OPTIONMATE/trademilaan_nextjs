@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Edit2, Trash2, Eye, EyeOff, Plus, Loader, X } from "lucide-react";
 import CouponForm from "./CouponForm";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import AdminPagination from "./ui/AdminPagination";
+import { usePagination } from "./ui/usePagination";
 
 export default function CouponList() {
   const [coupons, setCoupons] = useState([]);
@@ -14,6 +16,18 @@ export default function CouponList() {
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { couponId, couponCode }
+
+  // Shared pagination (client-side today; swap for API params later without
+  // touching the UI — the footer uses the same AdminPagination as every section).
+  const {
+    page,
+    pageSize,
+    totalItems,
+    totalPages,
+    pagedItems,
+    setPage,
+    setPageSize,
+  } = usePagination(coupons, 10);
 
   // Fetch coupons on mount
   useEffect(() => {
@@ -270,7 +284,7 @@ export default function CouponList() {
                 </tr>
               </thead>
               <tbody>
-                {coupons.map((coupon) => (
+                {pagedItems.map((coupon) => (
                   <tr
                     key={coupon._id}
                     className="border-b border-neutral-200 hover:bg-neutral-50 transition"
@@ -392,6 +406,22 @@ export default function CouponList() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Shared pagination footer — same component, alignment and spacing as
+          every other admin section */}
+      {!loading && coupons.length > 0 && (
+        <div className="mt-4 rounded-xl border border-neutral-200 bg-white px-4 py-3">
+          <AdminPagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemLabel={totalItems === 1 ? "coupon" : "coupons"}
+          />
         </div>
       )}
 

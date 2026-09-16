@@ -31,6 +31,13 @@ const ContactMessageSchema = new mongoose.Schema(
       trim: true,
       maxlength: 15,
     },
+    subject: {
+      type: String,
+      enum: ["general", "account", "billing", "feedback", "other"],
+      default: "general",
+      trim: true,
+      index: true,
+    },
     message: {
       type: String,
       required: true,

@@ -19,6 +19,16 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\d{8,15}$/;
 
+const SUBJECT_VALUES = ["general", "account", "billing", "feedback", "other"];
+
+const SUBJECT_LABELS = {
+  general: "General Inquiry",
+  account: "Account Support",
+  billing: "Billing & Pricing",
+  feedback: "Feedback / Suggestions",
+  other: "Other",
+};
+
 function sanitizeText(value) {
   return String(value || "").trim();
 }
@@ -68,6 +78,9 @@ export async function POST(request) {
     const name = sanitizeText(body?.name);
     const email = sanitizeText(body?.email).toLowerCase();
     const phone = sanitizePhone(body?.phone);
+    const rawSubject = sanitizeText(body?.subject).toLowerCase();
+    const subject = SUBJECT_VALUES.includes(rawSubject) ? rawSubject : "";
+    const subjectLabel = SUBJECT_LABELS[subject] || "";
     const message = sanitizeText(body?.message);
     const website = sanitizeText(body?.website); // Honeypot field
 
@@ -86,6 +99,10 @@ export async function POST(request) {
 
     if (!email || !EMAIL_REGEX.test(email) || email.length > 120) {
       errors.email = "Please enter a valid email address";
+    }
+
+    if (!subject) {
+      errors.subject = "Please choose a subject from the dropdown";
     }
 
     if (!phone || !PHONE_REGEX.test(phone)) {
@@ -129,6 +146,7 @@ export async function POST(request) {
       name,
       email,
       phone,
+      subject,
       message,
       clientIp,
       isRead: false,
@@ -168,6 +186,10 @@ export async function POST(request) {
                       <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(phone)}</td>
                     </tr>
                     <tr>
+                      <td style="padding:10px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:600;">Subject</td>
+                      <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(subjectLabel)}</td>
+                    </tr>
+                    <tr>
                       <td style="padding:10px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:600;">Submitted At</td>
                       <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(submittedAtLabel)}</td>
                     </tr>
@@ -189,7 +211,7 @@ export async function POST(request) {
       </table>
     `;
 
-    const adminText = `New contact form message received.\n\nReference ID: ${referenceId}\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nSubmitted At: ${submittedAtLabel}\nClient IP: ${clientIp}\n\nMessage:\n${message}`;
+    const adminText = `New contact form message received.\n\nReference ID: ${referenceId}\nName: ${name}\nEmail: ${email}\nPhone: ${phone}\nSubject: ${subjectLabel}\nSubmitted At: ${submittedAtLabel}\nClient IP: ${clientIp}\n\nMessage:\n${message}`;
 
     const ackHtml = `
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px;font-family:Arial,sans-serif;">

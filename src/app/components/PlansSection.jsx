@@ -149,7 +149,7 @@ export default function PlansSection() {
 
       {/* Plans Grid */}
       <h2 className="sr-only">Available subscription plans</h2>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-16 sm:mb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mb-16 sm:mb-20">
         {plans.map((plan) => (
           <PlanCard
             key={plan._id}

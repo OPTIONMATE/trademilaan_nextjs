@@ -24,6 +24,17 @@ export default function AdminSidebar({
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Lock background scroll while the mobile drawer is open,
+  // but keep the drawer itself scrollable.
+  useEffect(() => {
+    if (!mobileOpen || isDesktop) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen, isDesktop]);
+
   // Hidden from sighted users and assistive tech when off-canvas (mobile)
   // or explicitly collapsed (desktop).
   const visuallyHidden = isDesktop ? desktopCollapsed : !mobileOpen;
@@ -42,11 +53,11 @@ export default function AdminSidebar({
       <aside
         id="admin-sidebar"
         className={cn(
-          "left-0 top-[92px] z-40 flex w-[276px] max-w-[85vw] flex-col border border-neutral-200 bg-white shadow-xl transition-all duration-200 ease-in-out lg:sticky lg:top-[104px] lg:z-auto lg:h-[calc(100dvh-122px)] lg:w-[276px] lg:max-w-none lg:shrink-0 lg:shadow-none",
+          "left-0 top-[92px] z-40 flex w-[276px] max-w-[85vw] flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl transition-all duration-200 ease-in-out lg:sticky lg:top-[104px] lg:z-auto lg:h-[calc(100dvh-122px)] lg:max-h-[calc(100dvh-122px)] lg:w-[276px] lg:max-w-none lg:shrink-0 lg:shadow-none",
           // Mobile drawer.
           mobileOpen
-            ? "visible fixed translate-x-3 opacity-100"
-            : "invisible pointer-events-none fixed -translate-x-[120%] opacity-0",
+            ? "visible fixed h-[calc(100dvh-108px)] max-h-[calc(100dvh-108px)] translate-x-3 opacity-100"
+            : "invisible pointer-events-none fixed h-[calc(100dvh-108px)] max-h-[calc(100dvh-108px)] -translate-x-[120%] opacity-0",
           // Desktop mounted panel: always in flow, expands/contracts content.
           "lg:visible lg:translate-x-0 lg:opacity-100 lg:pointer-events-auto",
           desktopCollapsed && "lg:sr-only lg:absolute lg:pointer-events-none",
@@ -56,7 +67,7 @@ export default function AdminSidebar({
         inert={visuallyHidden || undefined}
       >
         {/* Mobile drawer header (brand lives in the site navbar) */}
-        <div className="flex items-center justify-between gap-2 border-b border-neutral-100 px-4 py-2.5 lg:hidden">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-neutral-100 px-4 py-2.5 lg:hidden">
           <span className="text-[13.2px] font-semibold uppercase tracking-wider text-neutral-400">
             Menu
           </span>
@@ -71,7 +82,7 @@ export default function AdminSidebar({
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 [-webkit-overflow-scrolling:touch] [touch-action:pan-y]">
           {ADMIN_NAV_GROUPS.map((group, groupIndex) => (
             <div key={group.label}>
               <h2
@@ -122,7 +133,7 @@ export default function AdminSidebar({
           ))}
         </nav>
 
-        <div className="border-t border-neutral-100 p-3">
+        <div className="shrink-0 border-t border-neutral-100 p-3">
           <Link
             href="/"
             target="_blank"

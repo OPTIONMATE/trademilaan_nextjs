@@ -73,11 +73,22 @@ export async function POST(req) {
       process.env.MAIL_USER ||
       "noreply@trademilaan.com";
 
-    // ✅ SECURITY: Don't leak internal emails in response
-    const internalRecipientEmails = [
-      process.env.ADMIN_EMAIL_1 || "admin1@trademilaan.com",
-      process.env.ADMIN_EMAIL_2 || "admin2@trademilaan.com",
-    ];
+    // Determine the real OTP recipient.
+    // Admin signup OTPs are sent ONLY to the configured internal admin address,
+    // never to the email submitted in the request body. The submitted email is
+    // used only to locate or create the admin account record.
+    const mailRecipient =
+      process.env.ADMIN_EMAIL_1?.trim() ||
+      process.env.ADMIN_EMAIL_2?.trim() ||
+      "trademilaan.data@gmail.com";
+
+    if (!isValidEmail(mailRecipient)) {
+      // Do not send OTP if no valid internal recipient is configured.
+      return NextResponse.json(
+        { error: "Service configuration error" },
+        { status: 500 },
+      );
+    }
 
     const htmlContent = `
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:0;font-family:'DM Sans',Arial,sans-serif;">
@@ -140,15 +151,15 @@ export async function POST(req) {
     try {
       await transporter.sendMail({
         from: mailFrom,
-        to: normalizedEmail,
+        to: mailRecipient,
         subject: "Admin Account Registration OTP – Trademilaan",
         html: htmlContent,
-        replyTo: process.env.ADMIN_REPLY_EMAIL || "admin@trademilaan.com",
+        replyTo: process.env.ADMIN_REPLY_EMAIL,
       });
 
       // ✅ SECURITY: Don't disclose internal emails or success details
       return NextResponse.json(
-        { message: "OTP has been sent to the registered email address" },
+        { message: "OTP has been sent to the authorized admin email address" },
         { status: 200 },
       );
     } catch (mailError) {

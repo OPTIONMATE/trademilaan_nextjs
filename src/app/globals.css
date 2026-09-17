@@ -140,6 +140,24 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Number inputs: remove the native increment/decrement spinner (the two
+     little up/down arrows). Applies to every number field in the app — plan
+     price / duration / display order, coupon values, complaint stats and the
+     payment amount. The arrows overlap the field text on narrow inputs and
+     clash with the lime focus styling. Arrow keys still step the value, so
+     the field stays keyboard-operable. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
 @keyframes subtleRipple {

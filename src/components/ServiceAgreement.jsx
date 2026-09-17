@@ -1242,7 +1242,7 @@ export default function ServiceAgreement({
                     <RASignature />
                   </div>
                   <p className="text-xs font-bold text-center mt-1">
-                    Signature (RA)
+                    Signature (Research Analyst)
                   </p>
                 </div>
               </div>

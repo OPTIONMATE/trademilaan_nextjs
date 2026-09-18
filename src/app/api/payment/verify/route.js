@@ -3,6 +3,7 @@ import connectDB from "@/app/lib/db";
 
 import { generateInvoicePDF } from "@/app/lib/generateInvoicePDF";
 import { sendInvoicePDFMail } from "@/app/lib/mailer";
+import { markInvoiceMailed } from "@/app/lib/invoiceMailTracking";
 import Payment from "@/app/lib/models/Payment";
 import Coupon from "@/app/lib/models/Coupon";
 import Plan from "@/app/lib/models/Plan";
@@ -340,6 +341,15 @@ export async function POST(request) {
       planName: orderPlanName,
       amount: safeAmount,
       clientPan: pan || panNumber || "",
+    });
+
+    // Tracking (User-level: invoiceMailedToUser/At). Runs only after the mail
+    // transport accepted the email; a tracking failure must never break the
+    // paid verification, so the helper never throws.
+    await markInvoiceMailed({
+      userId: decodedAuth?.id || null,
+      mailedTo: normalizedEmail,
+      logContext: "PAYMENT VERIFY (INVOICE)",
     });
 
     return NextResponse.json({

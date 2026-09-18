@@ -106,6 +106,19 @@ const signedAgreementSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Agreement-specific mail tracking: records whether THIS agreement's PDF
+    // was successfully accepted by the mail transport via sendAgreementPDFMail().
+    // Primary source of truth per agreement; User.agreementMailedToUser /
+    // User.agreementMailedAt are still maintained for backward compatibility.
+    // Meaning is transport acceptance, NOT inbox open/read.
+    agreementMailedToUser: {
+      type: Boolean,
+      default: false,
+    },
+    agreementMailedAt: {
+      type: Date,
+      default: null,
+    },
     pdfGeneratedAt: {
       type: Date,
       default: null,

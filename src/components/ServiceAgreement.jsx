@@ -1261,7 +1261,7 @@ export default function ServiceAgreement({
                 <div className="p-4 text-xs">
                   <p className="font-bold">SEBI RA Number: INH000019327</p>
                   <p>Registration Date: 07-January-2025</p>
-                  <p className="mt-2">Date: _________________</p>
+                  <p className="mt-2">Date: {signedDate}</p>
                 </div>
               </div>
             </div>

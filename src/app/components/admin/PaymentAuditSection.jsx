@@ -8,6 +8,7 @@ import AdminTable from "./ui/AdminTable";
 import AdminBadge from "./ui/AdminBadge";
 import AdminButton from "./ui/AdminButton";
 import AdminModal from "./ui/AdminModal";
+import AdminSelect from "./ui/AdminSelect";
 import AdminEmptyState from "./ui/AdminEmptyState";
 import AdminPagination from "./ui/AdminPagination";
 import {
@@ -36,6 +37,7 @@ export default function PaymentAuditSection() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -99,9 +101,42 @@ export default function PaymentAuditSection() {
     return filtered;
   })();
 
+  // Sort — same "Sort by" control as UsersSection, applied after the search
+  // and status filters so the sorted set always matches what is on screen.
+  const sortedPayments = [...filteredPayments].sort((a, b) => {
+    if (sortBy === "name") {
+      return String(a?.name || "").localeCompare(String(b?.name || ""));
+    }
+
+    if (sortBy === "email") {
+      return String(a?.email || "").localeCompare(String(b?.email || ""));
+    }
+
+    if (sortBy === "amountHigh") {
+      return Number(b?.amount || 0) - Number(a?.amount || 0);
+    }
+
+    if (sortBy === "amountLow") {
+      return Number(a?.amount || 0) - Number(b?.amount || 0);
+    }
+
+    if (sortBy === "expires") {
+      // Soonest expiry first — expired rows (past dates) come first.
+      return (
+        new Date(a?.expiresAt || 0).getTime() -
+        new Date(b?.expiresAt || 0).getTime()
+      );
+    }
+
+    // Default: most recent payment first
+    return (
+      new Date(b?.paidAt || 0).getTime() - new Date(a?.paidAt || 0).getTime()
+    );
+  });
+
   // Pagination — shared hook, same contract as the Agreements/Invoices sections.
-  // `resetKey` returns the view to page 1 whenever the search term or status
-  // filter changes.
+  // `resetKey` returns the view to page 1 whenever the search term, status
+  // filter or sort changes.
   const {
     page,
     pageSize,
@@ -110,8 +145,8 @@ export default function PaymentAuditSection() {
     pagedItems,
     setPage,
     setPageSize,
-  } = usePagination(filteredPayments, DEFAULT_PAGE_SIZE, {
-    resetKey: `${searchTerm}|${statusFilter}`,
+  } = usePagination(sortedPayments, DEFAULT_PAGE_SIZE, {
+    resetKey: `${searchTerm}|${statusFilter}|${sortBy}`,
   });
 
   const formatCurrency = (amount) =>
@@ -360,6 +395,26 @@ export default function PaymentAuditSection() {
                 { value: "expired", label: "Expired" },
               ]}
             />
+            <div className="w-full sm:w-52">
+              <label
+                htmlFor="admin-payments-sort"
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-neutral-500"
+              >
+                Sort by
+              </label>
+              <AdminSelect
+                id="admin-payments-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="newest">Newest first</option>
+                <option value="name">Customer name</option>
+                <option value="email">Email</option>
+                <option value="amountHigh">Amount (high to low)</option>
+                <option value="amountLow">Amount (low to high)</option>
+                <option value="expires">Expiring soonest</option>
+              </AdminSelect>
+            </div>
           </AdminToolbar>
         }
         footer={

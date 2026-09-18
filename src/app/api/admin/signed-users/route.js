@@ -116,6 +116,7 @@ export async function GET() {
         validTill,
         renewalDate,
         invoiceMailedToUser: Boolean(user.invoiceMailedToUser),
+        invoiceMailedAt: user.invoiceMailedAt ?? null,
       };
     });
 

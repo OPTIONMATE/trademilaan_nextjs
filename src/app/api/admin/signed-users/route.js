@@ -102,7 +102,14 @@ export async function GET() {
         state: cleanValue(agreement.clientState) || cleanValue(user.state) || "—",
         serviceName:
           cleanValue(payment?.planName) || cleanValue(agreement.signedPlanName) || "—",
-        agreementMailedToUser: Boolean(user.agreementMailedToUser),
+        // Per-agreement source of truth first; User flag only as legacy fallback
+        // for agreements mailed before agreement-level tracking existed.
+        // A User-level `true` never marks OTHER agreements: it applies only when
+        // THIS agreement has no agreement-level value yet (undefined/null).
+        agreementMailedToUser: Boolean(
+          agreement.agreementMailedToUser ?? user.agreementMailedToUser
+        ),
+        agreementMailedAt: agreement.agreementMailedAt ?? user.agreementMailedAt ?? null,
         mitcMailedToUser: Boolean(user.mitcMailedToUser),
         kycUpdatedByAdmin: Boolean(user.kycUpdatedByAdmin),
         validFrom: payment?.paidAt || null,

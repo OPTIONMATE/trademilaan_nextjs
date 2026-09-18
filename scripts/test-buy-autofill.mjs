@@ -5,10 +5,10 @@
  * These helpers decide what an existing user record contributes as the *initial*
  * form values (and what it must not contribute). Run:
  *
- *   node test-buy-autofill.mjs
+ *   node scripts/test-buy-autofill.mjs
  */
 const { profileValueFromUserRecord, sanitizeProfileInput } = await import(
-  "./src/app/lib/profileFields.js"
+  "../src/app/lib/profileFields.js"
 );
 
 let failures = 0;

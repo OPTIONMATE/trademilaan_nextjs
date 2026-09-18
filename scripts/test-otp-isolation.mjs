@@ -4,7 +4,7 @@
 // throwaway test database so production data is never touched. The test DB is
 // dropped before disconnect. No emails are ever sent.
 //
-// Usage: node test-otp-isolation.mjs
+// Usage: node scripts/test-otp-isolation.mjs
 import "dotenv/config";
 import mongoose from "mongoose";
 
@@ -28,15 +28,15 @@ if (!process.env.MONGO_URI) {
   process.exit(0);
 }
 
-const { default: connectDB } = await import("./src/app/lib/db.js");
-const { default: OTP } = await import("./src/app/lib/models/OTP.js");
+const { default: connectDB } = await import("../src/app/lib/db.js");
+const { default: OTP } = await import("../src/app/lib/models/OTP.js");
 const {
   issueOTP,
   verifyOTP,
   findLatestPendingOTP,
   removePendingOTPs,
   OTP_PURPOSES,
-} = await import("./src/app/lib/otpService.js");
+} = await import("../src/app/lib/otpService.js");
 
 const REG = OTP_PURPOSES.REGISTRATION;
 const ADMIN = OTP_PURPOSES.ADMIN_SIGNUP;

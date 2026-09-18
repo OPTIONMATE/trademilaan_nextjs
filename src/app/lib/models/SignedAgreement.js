@@ -61,6 +61,17 @@ const signedAgreementSchema = new mongoose.Schema(
       default: null, // in days
     },
 
+    // Exact link to the specific Payment that belongs to THIS agreement.
+    // Set once by POST /api/payment/verify after the payment succeeds, using
+    // the agreementId carried through the buy flow. Null for legacy records
+    // where the relationship cannot be reliably established (never guessed).
+    paymentId: {
+      type: String,
+      required: false,
+      default: null,
+      index: true,
+    },
+
     agreementHtml: {
       type: String,
       required: false,

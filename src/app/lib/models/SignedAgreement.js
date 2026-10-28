@@ -148,6 +148,9 @@ const signedAgreementSchema = new mongoose.Schema(
 );
 
 signedAgreementSchema.index({ userId: 1, status: 1 });
+// Serves `.sort({ signedTimestamp: -1 })` from the index instead of an
+// in-memory sort, which exceeds MongoDB's 32MB limit on large collections.
+signedAgreementSchema.index({ signedTimestamp: -1 });
 
 export default mongoose.models.SignedAgreement ||
   mongoose.model("SignedAgreement", signedAgreementSchema);

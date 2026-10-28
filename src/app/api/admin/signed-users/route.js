@@ -11,7 +11,12 @@ export async function GET() {
     await requireAdmin();
     await connectDB();
 
+    // Project only the fields this route reads. agreementHtml and signatureData
+    // are large and were previously loaded for every agreement.
     const signedAgreements = await SignedAgreement.find({})
+      .select(
+        "userId paymentId clientName clientEmail clientPan clientPhone clientDob clientState signedPlanName signedTimestamp agreementMailedToUser agreementMailedAt",
+      )
       .lean()
       .sort({ signedTimestamp: -1 });
 

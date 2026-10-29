@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { computeFinalServiceDate } from "./planValidity";
 import { getRASignatureJpegBuffer } from "./raSignature";
+import { pdfColors, drawPdfFooters } from "./pdfTheme";
 
 function formatSignedDateDisplay(input) {
   if (input === undefined || input === null || input === "") {
@@ -98,7 +99,7 @@ export async function generateCompleteAgreementPDF(agreementData) {
     const raRegistrationDate = "07-January-2025";
 
     const bseEnlistment = agreementData.bseEnlistment || "6469";
-    const raWebsite = "trademilaan";
+    const raWebsite = "Trademilaan";
 
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
@@ -114,96 +115,58 @@ export async function generateCompleteAgreementPDF(agreementData) {
     const textWidth = pageWidth - 2 * margin;
     let yPosition = pageHeight - margin;
 
+    const raTitle = "Research Analyst";
+
+    // Compact brand bar repeated at the top of every page: trade name, RA name,
+    // SEBI RA number, research analyst title and BSE enlistment, then a rule.
     const drawHeader = (page) => {
-      const headerFontSize = 18;
-      const subFontSize = 14;
-      const infoFontSize = 12;
-      const blue = rgb(0.38, 0.67, 0.87); // #61b3de
-      let y = pageHeight - 40;
+      const top = pageHeight - 40;
 
-      const raNameText = ` ${raName} `;
-      const raNameWidth = fontBold.widthOfTextAtSize(
-        raNameText,
-        headerFontSize,
-      );
-      page.drawText(raNameText, {
-        x: (pageWidth - raNameWidth) / 2,
-        y,
-        size: headerFontSize,
+      page.drawText(raWebsite, {
+        x: margin,
+        y: top - 16,
+        size: 18,
         font: fontBold,
-        color: blue,
+        color: pdfColors.primary,
       });
-      y -= headerFontSize + 2;
-
-      const raNumberText = `${raNumber}`;
-      const raNumberWidth = fontBold.widthOfTextAtSize(
-        raNumberText,
-        subFontSize,
-      );
-      page.drawText(raNumberText, {
-        x: (pageWidth - raNumberWidth) / 2,
-        y,
-        size: subFontSize,
+      page.drawText(raName, {
+        x: pageWidth - margin - fontBold.widthOfTextAtSize(raName, 11),
+        y: top - 6,
+        size: 11,
         font: fontBold,
-        color: blue,
+        color: pdfColors.charcoal,
       });
-      y -= subFontSize + 2;
-
-      const raTitle = "Research Analyst";
-      const raTitleWidth = fontBold.widthOfTextAtSize(raTitle, subFontSize);
-      page.drawText(raTitle, {
-        x: (pageWidth - raTitleWidth) / 2,
-        y,
-        size: subFontSize,
-        font: fontBold,
-        color: blue,
-      });
-      y -= subFontSize + 2;
-
       const bseText = `BSE Enlistment No.: ${bseEnlistment}`;
-      const bseWidth = font.widthOfTextAtSize(bseText, infoFontSize);
       page.drawText(bseText, {
-        x: (pageWidth - bseWidth) / 2,
-        y,
-        size: infoFontSize,
-        font: font,
-        color: blue,
+        x: pageWidth - margin - font.widthOfTextAtSize(bseText, 9),
+        y: top - 20,
+        size: 9,
+        font,
+        color: pdfColors.muted,
       });
-      y -= infoFontSize + 2;
 
-      const tradeText = `Trade Name: ${raWebsite}`;
-      const tradeWidth = font.widthOfTextAtSize(tradeText, infoFontSize);
-      page.drawText(tradeText, {
-        x: (pageWidth - tradeWidth) / 2,
-        y,
-        size: infoFontSize,
-        font: font,
-        color: blue,
+      const registrationText = `Trade Name: ${raWebsite}   |   SEBI RA No.: ${raNumber}   |   ${raTitle}`;
+      page.drawText(registrationText, {
+        x: margin,
+        y: top - 30,
+        size: 9,
+        font,
+        color: pdfColors.muted,
       });
-      y -= infoFontSize + 2;
-      // Draw a line below header
+
       page.drawLine({
-        start: { x: margin, y },
-        end: { x: pageWidth - margin, y },
-        color: rgb(0.4, 0.4, 0.4),
-        thickness: 1,
+        start: { x: margin, y: top - 40 },
+        end: { x: pageWidth - margin, y: top - 40 },
+        color: pdfColors.primary,
+        thickness: 1.2,
       });
 
-      yPosition = y - 28;
+      yPosition = top - 60;
     };
 
     const addNewPage = () => {
       currentPage = pdfDoc.addPage([595, 842]);
       drawHeader(currentPage);
-
-      let y = pageHeight - 40;
-      y -= 18 + 2;
-      y -= 14 + 2;
-      y -= 14 + 2;
-      y -= 12 + 2;
-      y -= 12 + 2;
-      y -= 8;
-      yPosition = y;
     };
 
     drawHeader(currentPage);
@@ -214,6 +177,7 @@ export async function generateCompleteAgreementPDF(agreementData) {
       indent = 0,
       bold = false,
       lineSpacing = 4,
+      color = pdfColors.charcoal,
     ) => {
       const words = text.split(" ");
       let line = "";
@@ -224,6 +188,8 @@ export async function generateCompleteAgreementPDF(agreementData) {
           "Font object is undefined in drawWrappedText. Check font loading.",
         );
       }
+      // Leading scales with the font size so legal text is not cramped.
+      const lineHeight = fontSize * 1.2 + lineSpacing;
       for (let i = 0; i < words.length; i++) {
         let testLine = line + words[i] + " ";
         let width = fontObj.widthOfTextAtSize(testLine, fontSize);
@@ -234,9 +200,9 @@ export async function generateCompleteAgreementPDF(agreementData) {
             y: yPosition,
             size: fontSize,
             font: fontObj,
-            color: rgb(0, 0, 0),
+            color,
           });
-          yPosition -= fontSize + lineSpacing;
+          yPosition -= lineHeight;
           line = words[i] + " ";
         } else {
           line = testLine;
@@ -249,10 +215,12 @@ export async function generateCompleteAgreementPDF(agreementData) {
           y: yPosition,
           size: fontSize,
           font: fontObj,
-          color: rgb(0, 0, 0),
+          color,
         });
-        yPosition -= fontSize + lineSpacing;
+        yPosition -= lineHeight;
       }
+      // Small gap after each paragraph so clauses are easy to tell apart.
+      yPosition -= 4;
     };
 
     // Helper: Draw section heading
@@ -267,13 +235,47 @@ export async function generateCompleteAgreementPDF(agreementData) {
           y: yPosition,
           size: fontSize,
           font: fontBold,
-          color: rgb(0, 0, 0),
+          color: pdfColors.primary,
         });
         yPosition -= fontSize + 2;
       } else {
-        drawWrappedText(text, fontSize, 0, true, 6);
+        drawWrappedText(text, fontSize, 0, true, 6, pdfColors.primary);
         yPosition -= 2;
       }
+    };
+
+    // Structured row of label/value pairs (e.g. agreement dates) in a light box.
+    const drawMetadataBox = (items) => {
+      const boxHeight = 44;
+      if (yPosition - boxHeight < margin + 20) addNewPage();
+      currentPage.drawRectangle({
+        x: margin,
+        y: yPosition - boxHeight,
+        width: textWidth,
+        height: boxHeight,
+        color: pdfColors.lightGray,
+        borderColor: pdfColors.border,
+        borderWidth: 0.8,
+      });
+      const columnWidth = textWidth / items.length;
+      items.forEach((item, index) => {
+        const x = margin + 14 + index * columnWidth;
+        currentPage.drawText(item.label, {
+          x,
+          y: yPosition - 16,
+          size: 8,
+          font: fontBold,
+          color: pdfColors.muted,
+        });
+        currentPage.drawText(item.value, {
+          x,
+          y: yPosition - 32,
+          size: 11,
+          font,
+          color: pdfColors.charcoal,
+        });
+      });
+      yPosition -= boxHeight + 10;
     };
 
     const drawList = (items, fontSize = 11, bullet = "•", indent = 18) => {
@@ -289,17 +291,31 @@ export async function generateCompleteAgreementPDF(agreementData) {
       if (yPosition < margin + 20) addNewPage();
     };
 
+    // --- DOCUMENT TITLE (first page only) ---
+    const documentTitle = "SERVICE AGREEMENT";
+    currentPage.drawText(documentTitle, {
+      x: (pageWidth - fontBold.widthOfTextAtSize(documentTitle, 16)) / 2,
+      y: yPosition - 16,
+      size: 16,
+      font: fontBold,
+      color: pdfColors.charcoal,
+    });
+    yPosition -= 36;
+
     // --- AGREEMENT PERIOD SECTION ---
-    drawSectionHeading("Service Agreement Period", 16, true);
+    drawSectionHeading("Service Agreement Period", 13, true);
     drawWrappedText(
       `This agreement is valid for the selected plan period.`,
       11,
     );
-    drawWrappedText(`Start Date: ${agreementStartDateDisplay}`, 11);
-    drawWrappedText(`End Date: ${agreementEndDateDisplay}`, 11);
-    addSpace(10);
+    drawMetadataBox([
+      { label: "Agreement Date", value: signedDateDisplay },
+      { label: "Start Date", value: agreementStartDateDisplay },
+      { label: "End Date", value: agreementEndDateDisplay },
+    ]);
+    addSpace(6);
 
-    drawSectionHeading("Terms of Service(TOS) or Client Consent", 18, true);
+    drawSectionHeading("Terms of Service(TOS) or Client Consent", 16, true);
 
     drawSectionHeading("1. DEFINITIONS");
 
@@ -593,7 +609,7 @@ export async function generateCompleteAgreementPDF(agreementData) {
     );
     drawWrappedText(`(c) Registration Date: Jan 07, 2025  `, 11, 0, false, 2);
     drawWrappedText(
-      `(d) Trade Name or Website: trademilaan (Note: Official ${raName} Website) `,
+      `(d) Trade Name or Website: Trademilaan (Note: Official ${raName} Website) `,
       11,
       0,
       false,
@@ -949,7 +965,7 @@ export async function generateCompleteAgreementPDF(agreementData) {
     addSpace(8);
     drawSectionHeading("21. Additional Information");
     drawWrappedText(
-      "(a) Full terms, disclaimers, disclosures, investor charters, MITC, refund policies, and regulatory disclosures are available on the official website: trademilaan ",
+      "(a) Full terms, disclaimers, disclosures, investor charters, MITC, refund policies, and regulatory disclosures are available on the official website: Trademilaan ",
     );
     addSpace(8);
     drawSectionHeading("Most Important Terms and Conditions (MITC)");
@@ -1117,15 +1133,18 @@ export async function generateCompleteAgreementPDF(agreementData) {
       "Learning Video Gallery: https://cybercrime.gov.in/Webform/video-category.aspx ",
     );
     drawWrappedText(
-      "For Investor charter, MITC, risk, disclosures, and disclaimers, refund policy, t&c, Fraud Awareness, and other, please visit our website: trademilaan and read everything to avoid any future conflict of interest. ",
+      "For Investor charter, MITC, risk, disclosures, and disclaimers, refund policy, t&c, Fraud Awareness, and other, please visit our website: Trademilaan and read everything to avoid any future conflict of interest. ",
     );
 
     // SIGNATURE SECTION - Two Column Table (Client left, RA right)
-    addSpace(20);
     // Table dimensions (taller bottom area for PAN / dates below signature lines)
     const tableWidth = pageWidth - 2 * margin;
     const colWidth = tableWidth / 2;
     const tableHeight = 185;
+    // Keep the whole signature block on one page: start it on a new page if it
+    // would not fit above the footer.
+    yPosition -= 20;
+    if (yPosition - tableHeight < margin + 20) addNewPage();
     const tableTop = yPosition;
     const tableLeft = margin;
     const rowHeight = tableHeight / 2;
@@ -1410,6 +1429,8 @@ export async function generateCompleteAgreementPDF(agreementData) {
 
     // Move yPosition below table for next content
     yPosition = tableTop - tableHeight - 20;
+
+    drawPdfFooters(pdfDoc, font);
 
     // Finalize and return
     const pdfBytes = await pdfDoc.save();

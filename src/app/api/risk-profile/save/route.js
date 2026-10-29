@@ -39,7 +39,7 @@ export async function POST(req) {
     const user = await User.findByIdAndUpdate(
       decoded.id,
       { riskProfile },
-      { new: true }
+      { returnDocument: "after" }
     ).select("-password");
 
     if (!user) {
@@ -74,7 +74,7 @@ export async function POST(req) {
         answers: riskProfile,
         updatedAt: new Date(),
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     console.log("Risk profile saved successfully for user:", user._id);

@@ -122,7 +122,7 @@ export async function POST(request) {
     const body = await request.json();
     await connectDB();
     const updated = await ComplaintStats.findOneAndUpdate({}, body, {
-      new: true,
+      returnDocument: "after",
       upsert: true,
       setDefaultsOnInsert: true,
     }).lean();

@@ -126,7 +126,7 @@ export async function PUT(req) {
     const updatedUser = await User.findByIdAndUpdate(
       user.userId,
       updateData,
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     );
 
     if (!updatedUser) {

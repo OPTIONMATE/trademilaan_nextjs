@@ -40,7 +40,7 @@ export async function PATCH(req) {
       user = await User.findByIdAndUpdate(
         userId,
         updateFields,
-        { new: true, runValidators: false }
+        { returnDocument: "after", runValidators: false }
       );
     } else {
       // If userId is not a valid ObjectId, it might be stored as string in SignedAgreement
@@ -50,7 +50,7 @@ export async function PATCH(req) {
         user = await User.findOneAndUpdate(
           { email: agreement.clientEmail.toLowerCase() },
           updateFields,
-          { new: true, runValidators: false }
+          { returnDocument: "after", runValidators: false }
         );
       }
     }

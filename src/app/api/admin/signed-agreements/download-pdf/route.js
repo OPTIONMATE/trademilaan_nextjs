@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
 import SignedAgreement from "@/app/lib/models/SignedAgreement";
 import Payment from "@/app/lib/models/Payment";
+import User from "@/app/lib/models/User";
 import { generateCompleteAgreementPDF } from "@/app/lib/generateCompletePDF";
 import { requireAdmin } from "@/app/lib/authServer";
 import { isValidObjectId } from "@/app/lib/validators";
+import { buildDocumentFileName } from "@/app/lib/documentFileName";
 import {
   computeFinalServiceDate,
   derivePurchasedDurationDays,
@@ -105,7 +107,18 @@ export async function POST(req) {
     });
 
     // Return PDF
-    const fileName = `agreement-${agreement.clientName || "unknown"}-${new Date(agreement.signedTimestamp).getTime()}.pdf`;
+    // Legacy rows may lack clientPan; fall back to the owner's profile PAN.
+    const clientPan =
+      agreement.clientPan ||
+      (agreement.userId && isValidObjectId(String(agreement.userId))
+        ? (await User.findById(agreement.userId).select("panNumber").lean())
+            ?.panNumber
+        : "");
+    const fileName = buildDocumentFileName(
+      clientPan,
+      "Agreement",
+      agreement.signedTimestamp,
+    );
 
     return new NextResponse(pdfBuffer, {
       status: 200,

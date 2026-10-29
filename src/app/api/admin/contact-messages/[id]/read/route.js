@@ -69,7 +69,7 @@ export async function PATCH(req, { params }) {
     const updated = await ContactMessage.findByIdAndUpdate(
       id,
       { isRead: body.isRead },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!updated) {

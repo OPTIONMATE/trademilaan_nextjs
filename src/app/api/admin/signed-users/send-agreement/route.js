@@ -103,6 +103,7 @@ export async function POST(req) {
       pdfBuffer,
       clientName: agreement.clientName || (user && user.fullName) || "User",
       clientPan: agreement.clientPan || (user && user.panNumber) || "",
+      signedAt: agreement.signedTimestamp,
     });
 
     // Same tracking semantics as the user download flow: primary record is THIS

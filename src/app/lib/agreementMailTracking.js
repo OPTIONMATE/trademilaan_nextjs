@@ -25,7 +25,7 @@ export async function markAgreementMailed({ agreementId, mailedTo, logContext = 
   // callers operate on a SignedAgreement fetched moments earlier.
   let agreementTracked = false;
   try {
-    const updated = await SignedAgreement.findByIdAndUpdate(agreementId, mailUpdate, { new: false });
+    const updated = await SignedAgreement.findByIdAndUpdate(agreementId, mailUpdate, { returnDocument: "before" });
     agreementTracked = Boolean(updated);
     if (!updated) {
       console.warn(`[${logContext}] agreement tracking skipped: SignedAgreement not found (${agreementId})`);
@@ -40,14 +40,14 @@ export async function markAgreementMailed({ agreementId, mailedTo, logContext = 
     const agreement = await SignedAgreement.findById(agreementId).select("userId").lean();
     const ownerId = agreement?.userId;
     if (ownerId && isValidObjectId(String(ownerId))) {
-      const updatedUser = await User.findByIdAndUpdate(ownerId, mailUpdate, { new: false });
+      const updatedUser = await User.findByIdAndUpdate(ownerId, mailUpdate, { returnDocument: "before" });
       userTracked = Boolean(updatedUser);
     }
     if (!userTracked && mailedTo) {
       const normalizedEmail = String(mailedTo).toLowerCase().trim();
       if (normalizedEmail) {
         const updatedByEmail = await User.findOneAndUpdate({ email: normalizedEmail }, mailUpdate, {
-          new: false,
+          returnDocument: "before",
         });
         userTracked = Boolean(updatedByEmail);
       }

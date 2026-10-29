@@ -3,18 +3,22 @@ import { requireAdmin } from "@/app/lib/authServer";
 import { isValidObjectId } from "@/app/lib/validators";
 import AdminReportLog from "@/app/lib/models/AdminReportLog";
 import { generateReport, getReportSettings } from "@/app/lib/adminReport/run";
-import { getRollingPeriod } from "@/app/lib/adminReport/schedule";
+import { getRollingPeriod, getCustomPeriod } from "@/app/lib/adminReport/schedule";
 
 export const maxDuration = 60;
 
 // GET ?logId=<id>  -> re-generate the Excel for that past report's period
+// GET ?range=day|week|month|last6|custom (&date|&month|&from&to)
+//                  -> Excel for an admin-chosen period
 // GET (no params)  -> Excel for the current period up to now
 // Data is regenerated from the database, so it reflects current records for
 // that period (e.g. complaint statuses as they are today).
 export async function GET(req) {
   try {
     await requireAdmin();
-    const logId = new URL(req.url).searchParams.get("logId");
+    const { searchParams } = new URL(req.url);
+    const logId = searchParams.get("logId");
+    const range = searchParams.get("range");
 
     let period;
     if (logId) {
@@ -24,6 +28,15 @@ export async function GET(req) {
       const log = await AdminReportLog.findById(logId).lean();
       if (!log) return NextResponse.json({ error: "Report not found" }, { status: 404 });
       period = { frequency: log.frequency, start: log.periodStart, end: log.periodEnd };
+    } else if (range) {
+      period = getCustomPeriod({
+        range,
+        date: searchParams.get("date"),
+        month: searchParams.get("month"),
+        from: searchParams.get("from"),
+        to: searchParams.get("to"),
+      });
+      if (!period) return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
     } else {
       period = getRollingPeriod(await getReportSettings());
     }

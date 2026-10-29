@@ -43,6 +43,13 @@ function fromIST(y, m, d, hh = 0, mm = 0) {
   return new Date(Date.UTC(y, m, d, hh, mm) - IST_OFFSET_MS);
 }
 
+// Scheduled day in a month: days past the month's end (e.g. 31 in April)
+// fall back to its last day.
+function monthDay(y, m, dayOfMonth) {
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return Math.min(dayOfMonth, lastDay);
+}
+
 function parseTime(time) {
   const [hh, mm] = String(time || DEFAULT_SETTINGS.time).split(":").map(Number);
   return [Number.isFinite(hh) ? hh : 9, Number.isFinite(mm) ? mm : 0];
@@ -59,8 +66,8 @@ export function getLatestOccurrence(settings, now = new Date()) {
     return today <= now ? today : fromIST(y, m, d - 1, hh, mm);
   }
   if (s.frequency === "monthly") {
-    const thisMonth = fromIST(y, m, s.dayOfMonth, hh, mm);
-    return thisMonth <= now ? thisMonth : fromIST(y, m - 1, s.dayOfMonth, hh, mm);
+    const thisMonth = fromIST(y, m, monthDay(y, m, s.dayOfMonth), hh, mm);
+    return thisMonth <= now ? thisMonth : fromIST(y, m - 1, monthDay(y, m - 1, s.dayOfMonth), hh, mm);
   }
   // weekly
   const back = (dow - s.dayOfWeek + 7) % 7;
@@ -75,7 +82,7 @@ export function getNextOccurrence(settings, now = new Date()) {
   const [hh, mm] = parseTime(s.time);
   const { y, m, d } = istParts(new Date(latest.getTime()));
   if (s.frequency === "daily") return fromIST(y, m, d + 1, hh, mm);
-  if (s.frequency === "monthly") return fromIST(y, m + 1, s.dayOfMonth, hh, mm);
+  if (s.frequency === "monthly") return fromIST(y, m + 1, monthDay(y, m + 1, s.dayOfMonth), hh, mm);
   return fromIST(y, m, d + 7, hh, mm);
 }
 
@@ -125,6 +132,58 @@ export function getRollingPeriod(settings, now = new Date()) {
   };
 }
 
+const MAX_CUSTOM_DAYS = 366;
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const MONTH_RE = /^(\d{4})-(\d{2})$/;
+
+function parseISTDate(value) {
+  const match = DATE_RE.exec(String(value || ""));
+  if (!match) return null;
+  const [y, m, d] = [Number(match[1]), Number(match[2]) - 1, Number(match[3])];
+  const date = fromIST(y, m, d);
+  const parts = istParts(date);
+  return parts.y === y && parts.m === m && parts.d === d ? { y, m, d } : null;
+}
+
+// Admin-chosen period for on-demand downloads (IST):
+// day = that date, week = 7 days from that date, month = that calendar month,
+// last6 = this month and the 5 before it, custom = from..to inclusive.
+// Returns null for invalid input; the end is capped at `now`.
+export function getCustomPeriod({ range, date, month, from, to }, now = new Date()) {
+  let start;
+  let end;
+  let frequency = "monthly";
+  if (range === "day" || range === "week") {
+    const p = parseISTDate(date);
+    if (!p) return null;
+    start = fromIST(p.y, p.m, p.d);
+    end = fromIST(p.y, p.m, p.d + (range === "day" ? 1 : 7));
+    frequency = range === "day" ? "daily" : "weekly";
+  } else if (range === "month") {
+    const match = MONTH_RE.exec(String(month || ""));
+    const m = match ? Number(match[2]) - 1 : -1;
+    if (m < 0 || m > 11) return null;
+    start = fromIST(Number(match[1]), m, 1);
+    end = fromIST(Number(match[1]), m + 1, 1);
+  } else if (range === "last6") {
+    const { y, m } = istParts(now);
+    start = fromIST(y, m - 5, 1);
+    end = now;
+  } else if (range === "custom") {
+    const a = parseISTDate(from);
+    const b = parseISTDate(to);
+    if (!a || !b) return null;
+    start = fromIST(a.y, a.m, a.d);
+    end = fromIST(b.y, b.m, b.d + 1);
+  } else {
+    return null;
+  }
+
+  if (end > now) end = now;
+  if (start >= end || end.getTime() - start.getTime() > MAX_CUSTOM_DAYS * DAY_MS) return null;
+  return { frequency, start, end, custom: true };
+}
+
 // Equal-length window right before the period, for "vs previous" figures.
 export function getPreviousPeriod({ start, end }) {
   const length = end.getTime() - start.getTime();
@@ -160,7 +219,10 @@ export function formatPeriodLabel({ start, end }) {
 export function describeSchedule(settings) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
   if (s.frequency === "daily") return `Every day at ${s.time} IST`;
-  if (s.frequency === "monthly") return `Monthly on day ${s.dayOfMonth} at ${s.time} IST`;
+  if (s.frequency === "monthly") {
+    const lastDayNote = s.dayOfMonth > 28 ? " (or the month's last day)" : "";
+    return `Monthly on day ${s.dayOfMonth}${lastDayNote} at ${s.time} IST`;
+  }
   return `Every ${WEEKDAYS[s.dayOfWeek]} at ${s.time} IST`;
 }
 

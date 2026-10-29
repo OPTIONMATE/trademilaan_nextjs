@@ -16,6 +16,16 @@ import { formatAdminDate, formatAdminDateTime, formatINR } from "./ui/adminForma
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const STATUS_TONE = { sent: "success", failed: "danger", sending: "pending" };
 const TRIGGER_LABEL = { cron: "Automatic", manual: "Manual", test: "Test" };
+const todayIST = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+
+// Query string for a period download, or null when an input is missing.
+function rangeQuery({ range, date, month, from, to }) {
+  if (range === "last6") return "range=last6";
+  if ((range === "day" || range === "week") && date) return `range=${range}&date=${date}`;
+  if (range === "month" && month) return `range=month&month=${month}`;
+  if (range === "custom" && from && to) return `range=custom&from=${from}&to=${to}`;
+  return null;
+}
 
 /**
  * Admin report settings, actions and send history.
@@ -27,6 +37,14 @@ export default function ReportsSection({ history, onChanged }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(null); // "save" | "all" | "test" | "download" | logId
   const [notice, setNotice] = useState(null); // { tone, text }
+  const [period, setPeriod] = useState(() => ({
+    range: "month",
+    date: todayIST(),
+    month: todayIST().slice(0, 7),
+    from: "",
+    to: todayIST(),
+  }));
+  const updatePeriod = (key, value) => setPeriod((p) => ({ ...p, [key]: value }));
 
   useEffect(() => {
     fetch("/api/admin/reports/settings")
@@ -91,11 +109,12 @@ export default function ReportsSection({ history, onChanged }) {
     }
   };
 
-  const download = async (logId) => {
-    setBusy(logId || "download");
+  // `query`: "logId=<id>", a period query, or null for the current period.
+  const download = async (query, busyKey = "download") => {
+    setBusy(busyKey);
     setNotice(null);
     try {
-      const res = await fetch(`/api/admin/reports/download${logId ? `?logId=${logId}` : ""}`);
+      const res = await fetch(`/api/admin/reports/download${query ? `?${query}` : ""}`);
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         throw new Error(json.error || `Download failed (${res.status})`);
@@ -174,7 +193,7 @@ export default function ReportsSection({ history, onChanged }) {
         <AdminButton
           variant="secondary"
           size="sm"
-          onClick={() => download(log._id)}
+          onClick={() => download(`logId=${log._id}`, log._id)}
           disabled={busy !== null}
           aria-label="Download this report as Excel"
         >
@@ -256,7 +275,7 @@ export default function ReportsSection({ history, onChanged }) {
                     onChange={(e) => update("dayOfMonth", Number(e.target.value))}
                     error={fieldErrors.dayOfMonth}
                   >
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                       <option key={d} value={d}>
                         {d}
                       </option>
@@ -277,7 +296,10 @@ export default function ReportsSection({ history, onChanged }) {
               <p className="text-xs text-neutral-500">
                 {form.frequency === "daily" && "Each report covers the previous day."}
                 {form.frequency === "weekly" && "Each report covers the previous 7 days."}
-                {form.frequency === "monthly" && "Each report covers the previous calendar month."}{" "}
+                {form.frequency === "monthly" &&
+                  `Each report covers the previous calendar month.${
+                    form.dayOfMonth > 28 ? " In shorter months it is sent on the last day." : ""
+                  }`}{" "}
                 The email usually arrives within an hour of the chosen time.
               </p>
 
@@ -346,6 +368,76 @@ export default function ReportsSection({ history, onChanged }) {
           </AdminCard>
         </div>
       </div>
+
+      <AdminCard
+        title="Download report for a period"
+        description="Excel for any day, week, month, the last 6 months or a custom range (up to 366 days)."
+      >
+        <div className="grid items-end gap-4 sm:grid-cols-4">
+          <AdminSelect
+            id="period-range"
+            label="Period"
+            value={period.range}
+            onChange={(e) => updatePeriod("range", e.target.value)}
+          >
+            <option value="day">Particular day</option>
+            <option value="week">Particular week</option>
+            <option value="month">Particular month</option>
+            <option value="last6">Last 6 months</option>
+            <option value="custom">Custom range</option>
+          </AdminSelect>
+
+          {(period.range === "day" || period.range === "week") && (
+            <AdminInput
+              id="period-date"
+              type="date"
+              label={period.range === "week" ? "Week starting" : "Date"}
+              value={period.date}
+              max={todayIST()}
+              onChange={(e) => updatePeriod("date", e.target.value)}
+            />
+          )}
+          {period.range === "month" && (
+            <AdminInput
+              id="period-month"
+              type="month"
+              label="Month"
+              value={period.month}
+              max={todayIST().slice(0, 7)}
+              onChange={(e) => updatePeriod("month", e.target.value)}
+            />
+          )}
+          {period.range === "custom" && (
+            <>
+              <AdminInput
+                id="period-from"
+                type="date"
+                label="From"
+                value={period.from}
+                max={period.to || todayIST()}
+                onChange={(e) => updatePeriod("from", e.target.value)}
+              />
+              <AdminInput
+                id="period-to"
+                type="date"
+                label="To"
+                value={period.to}
+                min={period.from || undefined}
+                max={todayIST()}
+                onChange={(e) => updatePeriod("to", e.target.value)}
+              />
+            </>
+          )}
+
+          <AdminButton
+            onClick={() => download(rangeQuery(period), "period")}
+            disabled={busy !== null || !rangeQuery(period)}
+          >
+            {busy === "period" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Download Excel
+          </AdminButton>
+        </div>
+      </AdminCard>
 
       <AdminCard title="Report history" description="Every automatic, manual and test report.">
         {logs.length === 0 ? (

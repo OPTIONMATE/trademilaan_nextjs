@@ -35,7 +35,7 @@ export async function PUT(req) {
     const dayOfWeek = Number(body.dayOfWeek);
     if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) errors.dayOfWeek = "Invalid day";
     const dayOfMonth = Number(body.dayOfMonth);
-    if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 28) errors.dayOfMonth = "Day must be 1-28";
+    if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) errors.dayOfMonth = "Day must be 1-31";
     const time = String(body.time || "");
     if (!TIME_RE.test(time)) errors.time = "Time must be HH:mm";
 

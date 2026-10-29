@@ -37,7 +37,11 @@ export function resolveRecipients() {
 }
 
 export function reportFileName(period) {
-  return `Trademilaan_Admin_Report_${isoDateIST(new Date(period.end.getTime() - 1))}.xlsx`;
+  const last = isoDateIST(new Date(period.end.getTime() - 1));
+  const first = isoDateIST(period.start);
+  // Custom multi-day downloads show the whole range in the name.
+  if (period.custom && first !== last) return `Trademilaan_Admin_Report_${first}_to_${last}.xlsx`;
+  return `Trademilaan_Admin_Report_${last}.xlsx`;
 }
 
 /** Builds the report + Excel for a period (used by send and download). */

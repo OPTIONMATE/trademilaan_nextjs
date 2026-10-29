@@ -70,7 +70,6 @@ const CouponSchema = new mongoose.Schema(
 
 // Indexes for performance
 CouponSchema.index({ isActive: 1, createdAt: -1 }); // For user queries (active coupons)
-CouponSchema.index({ code: 1 }); // For code lookup
 CouponSchema.index({ expiresAt: 1 }); // For expired coupon filtering
 CouponSchema.index({ createdAt: -1 }); // For sorting
 

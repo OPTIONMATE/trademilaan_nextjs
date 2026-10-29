@@ -152,7 +152,7 @@ export async function PUT(req, { params }) {
 
     // Update coupon (don't allow changing usedCount via this endpoint)
     const updatedCoupon = await Coupon.findByIdAndUpdate(id, updateData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 

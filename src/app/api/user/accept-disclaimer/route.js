@@ -14,7 +14,7 @@ export async function POST(req) {
   const user = await User.findByIdAndUpdate(
     decoded.id,
     { disclaimerAccepted: true },
-    { new: true }
+    { returnDocument: "after" }
   ).select("-password");
 
   return NextResponse.json({ user });

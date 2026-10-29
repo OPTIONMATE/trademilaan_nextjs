@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Loader2, FileSignature } from "lucide-react";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import { getFileNameFromResponse } from "@/app/lib/documentFileName";
 import AdminSection from "./ui/AdminSection";
 import AdminTable from "./ui/AdminTable";
 import AdminBadge from "./ui/AdminBadge";
@@ -84,7 +85,7 @@ export default function SignedAgreementsSection({ data }) {
     resetKey: `${searchEmail}|${sortBy}`,
   });
 
-  const handleDownload = async (agreementId, clientEmail) => {
+  const handleDownload = async (agreementId) => {
     setDownloadingId(agreementId);
     setDownloadError(null);
 
@@ -107,7 +108,7 @@ export default function SignedAgreementsSection({ data }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `agreement-${clientEmail || "unknown"}-${Date.now()}.pdf`;
+      link.download = getFileNameFromResponse(response, "Agreement.pdf");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -177,7 +178,7 @@ export default function SignedAgreementsSection({ data }) {
         <AdminButton
           variant="secondary"
           size="sm"
-          onClick={() => handleDownload(a._id, a.clientEmail)}
+          onClick={() => handleDownload(a._id)}
           disabled={downloadingId === a._id}
           aria-label={`Download agreement PDF for ${a.clientEmail || a._id}`}
         >

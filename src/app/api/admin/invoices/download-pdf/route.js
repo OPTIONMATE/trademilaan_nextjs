@@ -3,6 +3,7 @@ import connectDB from "@/app/lib/db";
 import { generateInvoicePDF } from "@/app/lib/generateInvoicePDF";
 import { requireAdmin } from "@/app/lib/authServer";
 import { isValidObjectId } from "@/app/lib/validators";
+import { buildDocumentFileName } from "@/app/lib/documentFileName";
 
 export async function POST(req) {
   try {
@@ -81,7 +82,12 @@ export async function POST(req) {
     }
 
     // Generate filename
-    const fileName = `invoice-${invoice.clientName}-${new Date(invoice.createdAt).getTime()}.pdf`;
+    // Invoice.startDate is the stored payment date (see payment/verify).
+    const fileName = buildDocumentFileName(
+      invoice.pan,
+      "Invoice",
+      invoice.startDate || invoice.createdAt,
+    );
 
     return new NextResponse(pdfBuffer, {
       status: 200,

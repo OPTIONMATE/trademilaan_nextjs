@@ -1,5 +1,5 @@
 // Send agreement PDF as attachment
-export async function sendAgreementPDFMail({ to, pdfBuffer, clientName, clientPan, userPan }) {
+export async function sendAgreementPDFMail({ to, pdfBuffer, clientName, clientPan, userPan, signedAt }) {
   const from =
     process.env.MAIL_FROM ||
     process.env.MAIL_USER ||
@@ -120,7 +120,7 @@ export async function sendAgreementPDFMail({ to, pdfBuffer, clientName, clientPa
     text: `Dear ${clientName || "Valued Client"},\n\nYour Service Agreement has been successfully signed and executed.\n\nPlease find the complete agreement PDF attached to this email.\n\nPAN: ${panDisplay}\nDate: ${signedDate}\n\nThank you for choosing Trademilaan.\n\nRegards,\nSasikumar Peyyala\nSEBI Registered Research Analyst (INH000019327)\nspkumar.researchanalyst@gmail.com\n+91 77022 62206`,
     attachments: [
       {
-        filename: "agreement.pdf",
+        filename: buildDocumentFileName(clientPan, "Agreement", signedAt || new Date()),
         content: pdfBuffer,
         contentType: "application/pdf",
       },
@@ -142,6 +142,7 @@ export async function sendAgreementPDFMail({ to, pdfBuffer, clientName, clientPa
 import nodemailer from "nodemailer";
 import connectDB from "@/app/lib/db";
 import User from "@/app/lib/models/User";
+import { buildDocumentFileName } from "@/app/lib/documentFileName";
 
 console.log("MAILER FILE LOADED");
 
@@ -157,7 +158,8 @@ const transporter = nodemailer.createTransport({
     pass: process.env.MAIL_PASS,
   },
   logger: process.env.NODE_ENV === 'development',
-  debug: process.env.NODE_ENV === 'development',
+  // Full SMTP debug dumps the whole MIME body (base64 PDFs); opt in only.
+  debug: process.env.MAIL_DEBUG === 'true',
 });
 
 // Verify SMTP
@@ -279,12 +281,12 @@ export async function sendTermsAndConditionsMail(emailOrOptions, maybeOptions) {
     // SMTP success -> flag true. SMTP failure (thrown above) leaves it false.
     await connectDB();
     if (userId) {
-      await User.findByIdAndUpdate(userId, { mitcMailedToUser: true }, { new: false });
+      await User.findByIdAndUpdate(userId, { mitcMailedToUser: true }, { returnDocument: "before" });
     } else {
       await User.findOneAndUpdate(
         { email: String(email).toLowerCase().trim() },
         { mitcMailedToUser: true },
-        { new: false }
+        { returnDocument: "before" }
       );
     }
 
@@ -296,7 +298,7 @@ export async function sendTermsAndConditionsMail(emailOrOptions, maybeOptions) {
 }
 
 // Send invoice PDF as attachment
-export async function sendInvoicePDFMail({ to, pdfBuffer, clientName, email, phone, planName, amount, clientPan }) {
+export async function sendInvoicePDFMail({ to, pdfBuffer, clientName, email, phone, planName, amount, clientPan, paidAt }) {
   const from =
     process.env.MAIL_FROM ||
     process.env.MAIL_USER ||
@@ -443,7 +445,7 @@ Sasikumar Peyyala
 SEBI Registered Research Analyst (INH000019327)`,
     attachments: [
       {
-        filename: "invoice.pdf",
+        filename: buildDocumentFileName(clientPan, "Invoice", paidAt || new Date()),
         content: pdfBuffer,
         contentType: "application/pdf",
       },

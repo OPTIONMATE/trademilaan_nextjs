@@ -148,7 +148,7 @@ export async function PUT(req, { params }) {
 
     // Update plan
     const updatedPlan = await Plan.findByIdAndUpdate(id, updateData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 

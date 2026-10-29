@@ -10,6 +10,7 @@ import { sendAgreementPDFMail } from "@/app/lib/mailer";
 import { markAgreementMailed } from "@/app/lib/agreementMailTracking";
 import { requireAuth, userOwnsResource } from "@/app/lib/authServer";
 import { isValidObjectId } from "@/app/lib/validators";
+import { buildDocumentFileName } from "@/app/lib/documentFileName";
 
 export async function GET(req, { params }) {
   try {
@@ -130,19 +131,24 @@ export async function GET(req, { params }) {
       );
     }
 
+    // Owner lookup only when the agreement itself lacks email or PAN
+    // (legacy rows); PAN drives the mailed/downloaded file name.
+    const owner =
+      !agreement.clientEmail || !agreement.clientPan
+        ? await User.findById(agreement.userId).select("email panNumber").lean()
+        : null;
+    const clientPan = agreement.clientPan || owner?.panNumber || "";
+
     // Send confirmation mail
-    const agreementMailTo =
-      agreement.clientEmail ||
-      (
-        await User.findById(agreement.userId).select("email").lean()
-      )?.email;
+    const agreementMailTo = agreement.clientEmail || owner?.email;
 
     if (agreementMailTo) {
       await sendAgreementPDFMail({
         to: agreementMailTo,
         pdfBuffer,
         clientName: agreement.clientName || "User",
-        clientPan: agreement.clientPan || "",
+        clientPan,
+        signedAt: agreement.signedTimestamp,
       });
 
       // Tracking (primary: THIS SignedAgreement; backward-compat: owner User).
@@ -160,7 +166,7 @@ export async function GET(req, { params }) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="agreement-${fileId}.pdf"`,
+        "Content-Disposition": `attachment; filename="${buildDocumentFileName(clientPan, "Agreement", agreement.signedTimestamp)}"`,
         "Content-Length": pdfBuffer.length.toString(),
         "Cache-Control": "no-store",
       },

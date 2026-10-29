@@ -21,14 +21,14 @@ export async function markInvoiceMailed({ userId, mailedTo, logContext = "invoic
   let userTracked = false;
   try {
     if (userId && isValidObjectId(String(userId))) {
-      const updatedUser = await User.findByIdAndUpdate(userId, mailUpdate, { new: false });
+      const updatedUser = await User.findByIdAndUpdate(userId, mailUpdate, { returnDocument: "before" });
       userTracked = Boolean(updatedUser);
     }
     if (!userTracked && mailedTo) {
       const normalizedEmail = String(mailedTo).toLowerCase().trim();
       if (normalizedEmail) {
         const updatedByEmail = await User.findOneAndUpdate({ email: normalizedEmail }, mailUpdate, {
-          new: false,
+          returnDocument: "before",
         });
         userTracked = Boolean(updatedByEmail);
       }

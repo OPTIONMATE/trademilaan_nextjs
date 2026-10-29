@@ -7,6 +7,10 @@ import ESignModal from "@/app/components/ESignModal";
 import PaymentForm from "@/app/components/buy/PaymentForm";
 import ServiceAgreement from "@/components/ServiceAgreement";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import {
+  buildDocumentFileName,
+  getFileNameFromResponse,
+} from "@/app/lib/documentFileName";
 import BuyFlowShell, {
   BuyActions,
   buyPrimaryButtonClass,
@@ -290,7 +294,10 @@ export default function AgreementModal({
                           const url = window.URL.createObjectURL(blob);
                           const link = document.createElement("a");
                           link.href = url;
-                          link.download = `invoice-${paymentResult.razorpay_payment_id}.pdf`;
+                          link.download = getFileNameFromResponse(
+                            response,
+                            buildDocumentFileName(kycPan, "Invoice", new Date()),
+                          );
                           document.body.appendChild(link);
                           link.click();
                           document.body.removeChild(link);
@@ -320,7 +327,10 @@ export default function AgreementModal({
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement("a");
                             link.href = url;
-                            link.download = `invoice-${paymentResult.razorpay_payment_id}.pdf`;
+                            link.download = getFileNameFromResponse(
+                              response,
+                              buildDocumentFileName(kycPan, "Invoice", new Date()),
+                            );
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
@@ -405,7 +415,7 @@ export default function AgreementModal({
                     <div className="mt-6 flex flex-col gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:items-center sm:justify-end">
                       <a
                         href={`/api/agreement/download/${signedFileId}`}
-                        download={`agreement-${signedFileId}.pdf`}
+                        download={buildDocumentFileName(kycPan, "Agreement", signingData?.signedTimestamp || new Date())}
                         className={buyDownloadButtonClass}
                       >
                         Download signed agreement (PDF)

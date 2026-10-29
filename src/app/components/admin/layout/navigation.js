@@ -14,6 +14,7 @@ import {
   BarChart3,
   MessageSquare,
   AlertTriangle,
+  FileSpreadsheet,
 } from "lucide-react";
 
 /**
@@ -70,6 +71,11 @@ export const ADMIN_NAV_GROUPS = [
         label: "Analytics",
         href: "/admin-dashboard/analytics",
         icon: BarChart3,
+      },
+      {
+        label: "Reports",
+        href: "/admin-dashboard/reports",
+        icon: FileSpreadsheet,
       },
     ],
   },

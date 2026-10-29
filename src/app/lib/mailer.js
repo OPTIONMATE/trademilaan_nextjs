@@ -465,6 +465,153 @@ SEBI Registered Research Analyst (INH000019327)`,
   }
 }
 
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+// Send the periodic admin report (summary in body, full details in .xlsx)
+export async function sendAdminReportMail({
+  to,
+  subject,
+  periodLabel,
+  generatedAtLabel,
+  summary: s,
+  expiringClients = [],
+  xlsxBuffer,
+  fileName,
+  dashboardUrl,
+}) {
+  const from =
+    process.env.MAIL_FROM ||
+    process.env.MAIL_USER ||
+    "trademilaan.data@gmail.com";
+
+  const inr = (n) => `Rs. ${Number(n || 0).toLocaleString("en-IN")}`;
+  const change = (current, previous) => {
+    if (previous === undefined || previous === null) return "";
+    const diff = Number(current || 0) - Number(previous || 0);
+    if (diff === 0) return `<span style="color:#6b7280;">(same as previous)</span>`;
+    const color = diff > 0 ? "#15803d" : "#b91c1c";
+    return `<span style="color:${color};">(${diff > 0 ? "▲" : "▼"} ${Math.abs(diff).toLocaleString("en-IN")} vs previous)</span>`;
+  };
+  const row = (label, value, extra = "") => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eaeaea;font-size:14px;color:#6b7280;">${label}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eaeaea;font-size:14px;color:#111827;text-align:right;font-weight:600;">${value} ${extra}</td>
+    </tr>`;
+  const section = (title) =>
+    `<p style="font-size:13px;font-weight:700;color:#9BE749;margin:20px 0 6px 0;text-transform:uppercase;letter-spacing:0.8px;">${title}</p>`;
+
+  const attention = [];
+  if (s.expiringSoon) attention.push(`${s.expiringSoon} subscription(s) expire in the next 7 days`);
+  if (s.complaintsOpen) attention.push(`${s.complaintsOpen} complaint(s) still open`);
+  if (s.clientsWithoutAgreement) attention.push(`${s.clientsWithoutAgreement} active client(s) without a signed agreement`);
+  if (s.agreementsNotMailed) attention.push(`${s.agreementsNotMailed} active client(s) whose agreement was not mailed`);
+  if (s.invoicesNotMailed) attention.push(`${s.invoicesNotMailed} active client(s) whose invoice was not mailed`);
+
+  const expiringList = expiringClients
+    .slice(0, 10)
+    .map(
+      (c) =>
+        `<li>${escapeHtml(c.name || c.email)} – ${escapeHtml(c.planName)} – ${c.daysRemaining} day(s) left</li>`,
+    )
+    .join("");
+
+  const html = `
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:0;font-family:'DM Sans',Arial,sans-serif;">
+    <tr>
+      <td align="center" style="padding:20px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-left:4px solid #9BE749;">
+          <tr>
+            <td style="padding:28px 32px 8px 32px;">
+              <h1 style="margin:0 0 6px 0;font-size:28px;color:#111827;font-weight:700;">Trademilaan</h1>
+              <p style="margin:0 0 4px 0;font-size:16px;color:#111827;font-weight:600;">Admin Report</p>
+              <p style="margin:0;font-size:13px;color:#6b7280;">Period: ${escapeHtml(periodLabel)} · Generated ${escapeHtml(generatedAtLabel)} IST</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 28px 32px;">
+              ${
+                attention.length
+                  ? `${section("Needs attention")}
+              <ul style="margin:0;padding-left:18px;font-size:14px;color:#b45309;line-height:1.7;">${attention.map((a) => `<li>${a}</li>`).join("")}</ul>`
+                  : ""
+              }
+
+              ${section("Payments & revenue")}
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${row("Payments received", s.paymentsCount, change(s.paymentsCount, s.previousPaymentsCount))}
+                ${row("Revenue (incl. GST)", inr(s.revenueTotal), change(s.revenueTotal, s.previousRevenueTotal))}
+                ${row("Base / GST", `${inr(s.revenueBase)} / ${inr(s.revenueGst)}`)}
+              </table>
+
+              ${section("Clients & subscriptions")}
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${row("Total paid clients", s.totalClients)}
+                ${row("Active subscriptions", s.activeClients)}
+                ${row("Expiring in next 7 days", s.expiringSoon)}
+                ${row("Expired", s.expiredClients)}
+                ${row("New signups", s.newUsers)}
+              </table>
+              ${expiringList ? `<p style="font-size:13px;color:#404040;margin:10px 0 4px 0;">Expiring soon:</p><ul style="margin:0;padding-left:18px;font-size:13px;color:#404040;line-height:1.6;">${expiringList}</ul>` : ""}
+
+              ${section("Documents & complaints")}
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${row("Agreements signed", s.agreementsSigned)}
+                ${row("Invoices issued", s.invoicesIssued)}
+                ${row("Complaints received", s.complaintsReceived)}
+                ${row("Open complaints", s.complaintsOpen)}
+              </table>
+
+              <p style="font-size:13px;color:#404040;margin:20px 0 0 0;line-height:1.6;">
+                ${xlsxBuffer ? `Full client-wise details (user details, plan, validity, agreement, invoice, complaints) are in the attached Excel file <strong>${escapeHtml(fileName)}</strong>.` : "The Excel file was too large to attach. Please download it from the admin dashboard."}
+                ${dashboardUrl ? `<br/>Dashboard: <a href="${escapeHtml(dashboardUrl)}" style="color:#4d7c0f;font-weight:600;">${escapeHtml(dashboardUrl)}</a>` : ""}
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px;border-top:1px solid #eaeaea;background:#f9fafb;">
+              <p style="font-size:11px;color:#9B9B9B;margin:0;text-align:center;">Confidential – contains client personal data. For Trademilaan admins only.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+  `;
+
+  const text = [
+    `Trademilaan Admin Report – ${periodLabel}`,
+    attention.length ? `\nNeeds attention:\n- ${attention.join("\n- ")}` : "",
+    `\nPayments: ${s.paymentsCount} | Revenue: ${inr(s.revenueTotal)} (base ${inr(s.revenueBase)}, GST ${inr(s.revenueGst)})`,
+    `Clients: ${s.totalClients} total, ${s.activeClients} active, ${s.expiringSoon} expiring soon, ${s.expiredClients} expired, ${s.newUsers} new signups`,
+    `Agreements signed: ${s.agreementsSigned} | Invoices issued: ${s.invoicesIssued}`,
+    `Complaints received: ${s.complaintsReceived} | Open: ${s.complaintsOpen}`,
+    xlsxBuffer ? `\nFull details: attached ${fileName}` : "\nExcel too large to attach – download it from the admin dashboard.",
+  ].join("\n");
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject,
+    html,
+    text,
+    attachments: xlsxBuffer
+      ? [
+          {
+            filename: fileName,
+            content: xlsxBuffer,
+            contentType:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+        ]
+      : [],
+  });
+}
+
 export { transporter };
 
 /**

@@ -14,9 +14,14 @@ export function useAdminData(url, extractor = (json) => json) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
+  // `{ silent: true }` refreshes in the background: no loading state, and a
+  // failed refresh keeps the current data instead of showing an error.
+  const load = async (options) => {
+    const silent = options?.silent === true;
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
@@ -24,9 +29,9 @@ export function useAdminData(url, extractor = (json) => json) {
       setData(extractor(json));
     } catch (err) {
       console.error(`Admin fetch error (${url}):`, err);
-      setError(err.message || "Unable to load data");
+      if (!silent) setError(err.message || "Unable to load data");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

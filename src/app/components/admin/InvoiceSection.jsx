@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Loader2, ReceiptText } from "lucide-react";
 import { fetchWithCsrf } from "@/app/lib/csrfClient";
+import { getFileNameFromResponse } from "@/app/lib/documentFileName";
 import AdminSection from "./ui/AdminSection";
 import AdminTable from "./ui/AdminTable";
 import AdminBadge from "./ui/AdminBadge";
@@ -107,7 +108,7 @@ export default function InvoiceSection({ data }) {
     });
   };
 
-  const handleDownloadInvoice = async (invoiceId, clientName) => {
+  const handleDownloadInvoice = async (invoiceId) => {
     setDownloading(true);
     setDownloadError(null);
 
@@ -127,7 +128,7 @@ export default function InvoiceSection({ data }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `invoice-${clientName || "unknown"}-${Date.now()}.pdf`;
+      link.download = getFileNameFromResponse(response, "Invoice.pdf");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -314,12 +315,7 @@ export default function InvoiceSection({ data }) {
               </AdminButton>
               <AdminButton
                 variant="primary"
-                onClick={() =>
-                  handleDownloadInvoice(
-                    selectedInvoice._id,
-                    selectedInvoice.clientName,
-                  )
-                }
+                onClick={() => handleDownloadInvoice(selectedInvoice._id)}
                 disabled={downloading}
               >
                 {downloading ? (

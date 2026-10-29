@@ -197,7 +197,7 @@ export async function POST(req) {
       savedAgreement = await SignedAgreement.findOneAndUpdate(
         { _id: existingAgreement._id },
         resignAgreementData,
-        { new: true },
+        { returnDocument: "after" },
       );
     } else {
       console.log("Creating new signed agreement.");

@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { profileValueFromUserRecord } from "@/app/lib/profileFields";
 import {
+  buildDocumentFileName,
+  getFileNameFromResponse,
+} from "@/app/lib/documentFileName";
+import {
   buyErrorClass,
   buyInputClass,
   buyLabelClass,
@@ -387,7 +391,10 @@ export default function PaymentForm({
 
                 const link = document.createElement("a");
                 link.href = url;
-                link.download = `invoice-${verifyData.razorpay_payment_id}.pdf`;
+                link.download = getFileNameFromResponse(
+                  res,
+                  buildDocumentFileName(userDetails?.panNumber, "Invoice", new Date()),
+                );
                 link.click();
               }}
             >

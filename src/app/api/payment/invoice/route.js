@@ -3,6 +3,7 @@ import connectDB from "@/app/lib/db";
 import { generateInvoicePDF } from "@/app/lib/generateInvoicePDF";
 import Payment from "@/app/lib/models/Payment";
 import { requireAuth } from "@/app/lib/authServer";
+import { buildDocumentFileName } from "@/app/lib/documentFileName";
 
 export async function GET(request) {
   try {
@@ -93,7 +94,7 @@ export async function GET(request) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename=invoice-${payment.razorpay_payment_id}.pdf`,
+        "Content-Disposition": `attachment; filename="${buildDocumentFileName(invoice.pan, "Invoice", payment.paidAt)}"`,
       },
     });
   } catch (err) {

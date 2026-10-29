@@ -328,7 +328,7 @@ export async function POST(request) {
       await Coupon.findOneAndUpdate(
         { code: couponCode.toUpperCase() },
         { $inc: { usedCount: 1 } },
-        { new: true },
+        { returnDocument: "after" },
       );
     }
 
@@ -402,6 +402,7 @@ export async function POST(request) {
       planName: orderPlanName,
       amount: safeAmount,
       clientPan: pan || panNumber || "",
+      paidAt,
     });
 
     // Tracking (User-level: invoiceMailedToUser/At). Runs only after the mail
